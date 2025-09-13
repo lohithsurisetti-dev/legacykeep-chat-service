@@ -1,4 +1,4 @@
-package com.legacykeep.chat.repository;
+package com.legacykeep.chat.repository.postgres;
 
 import com.legacykeep.chat.entity.ChatAudit;
 import com.legacykeep.chat.enums.AuditAction;

@@ -1,4 +1,4 @@
-package com.legacykeep.chat.repository;
+package com.legacykeep.chat.repository.mongo;
 
 import com.legacykeep.chat.entity.Message;
 import com.legacykeep.chat.enums.MessageStatus;

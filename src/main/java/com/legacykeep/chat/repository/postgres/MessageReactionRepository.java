@@ -1,4 +1,4 @@
-package com.legacykeep.chat.repository;
+package com.legacykeep.chat.repository.postgres;
 
 import com.legacykeep.chat.entity.MessageReaction;
 import com.legacykeep.chat.entity.MessageReaction.ReactionType;
