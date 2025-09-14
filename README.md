@@ -35,6 +35,17 @@ A comprehensive, production-ready chat service for the LegacyKeep family communi
 - **User access management** for encrypted rooms
 - **Secure key storage** and distribution
 
+### Content Filtering System
+- **Global filters** - Apply to all messages from all contacts and groups
+- **Contact-specific filters** - Apply only to messages from specific contacts
+- **Room filters** - Apply to all messages in specific chat rooms
+- **Word filtering** - Case-insensitive word boundary matching
+- **Emoji filtering** - Exact emoji matching with Unicode support
+- **Filter priority system** - Global > Contact > Room
+- **UI-ready filtering** - Messages marked as filtered for client-side masking
+- **Filter management** - Add, remove, and list filters via API
+- **Filter testing** - Test content before sending messages
+
 ### Analytics & Insights
 - **Real-time analytics** dashboard
 - **User communication patterns**
@@ -232,6 +243,39 @@ mvn verify
 mvn test jacoco:report
 ```
 
+### Content Filter System
+
+The chat service includes a comprehensive content filtering system that allows users to maintain lists of words and emojis they don't want to see, with support for global, contact-specific, and room-level filtering.
+
+#### Filter Types
+- **Global Filters**: Apply to all messages from all contacts and groups
+- **Contact Filters**: Apply only to messages from specific contacts
+- **Room Filters**: Apply to all messages in specific chat rooms
+
+#### Filter Content Types
+- **Word Filters**: Case-insensitive word boundary matching
+- **Emoji Filters**: Exact emoji matching with Unicode support
+- **Phrase Filters**: Ready for future implementation
+
+#### UI Integration
+Messages are marked with filter information for client-side masking:
+```json
+{
+  "content": "[Content Filtered]",
+  "isFiltered": true,
+  "filteredReasons": ["Contains: \"work\" (WORD)"],
+  "applicableFilterTypes": ["WORD"],
+  "filterStatus": "FILTERED"
+}
+```
+
+#### Key Endpoints
+- `GET /api/v1/filters/global` - Get user's global filters
+- `POST /api/v1/filters/global` - Add global filter
+- `POST /api/v1/filters/contacts/{contactId}` - Add contact filter
+- `POST /api/v1/filters/rooms/{roomId}` - Add room filter
+- `POST /api/v1/filters/test` - Test if content would be filtered
+
 ### API Testing
 Use the comprehensive test suite in [API_TESTING_GUIDE.md](./API_TESTING_GUIDE.md) to verify all endpoints.
 
@@ -289,6 +333,6 @@ For support and questions:
 
 ---
 
-**Version**: 2.0.0  
+**Version**: 2.1.0  
 **Status**: ✅ Production Ready  
 **Last Updated**: September 14, 2025
