@@ -39,7 +39,7 @@ public class AnalyticsController {
      * Get comprehensive family communication analytics
      */
     @GetMapping("/family/{familyId}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getFamilyCommunicationAnalytics(@PathVariable Long familyId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getFamilyCommunicationAnalytics(@PathVariable("familyId") Long familyId) {
         log.debug("Getting family communication analytics for family: {}", familyId);
         
         try {
@@ -82,7 +82,7 @@ public class AnalyticsController {
      * Get user communication analytics
      */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getUserCommunicationAnalytics(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getUserCommunicationAnalytics(@PathVariable("userId") Long userId) {
         log.debug("Getting user communication analytics for user: {}", userId);
         
         try {
@@ -120,7 +120,7 @@ public class AnalyticsController {
      * Get chat room analytics
      */
     @GetMapping("/chat-room/{chatRoomId}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getChatRoomAnalytics(@PathVariable Long chatRoomId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getChatRoomAnalytics(@PathVariable("chatRoomId") Long chatRoomId) {
         log.debug("Getting chat room analytics for chat room: {}", chatRoomId);
         
         try {
@@ -376,7 +376,7 @@ public class AnalyticsController {
      * Get family engagement score
      */
     @GetMapping("/engagement/family/{familyId}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getFamilyEngagementScore(@PathVariable Long familyId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getFamilyEngagementScore(@PathVariable("familyId") Long familyId) {
         log.debug("Getting family engagement score for family: {}", familyId);
         
         try {

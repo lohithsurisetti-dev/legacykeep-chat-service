@@ -802,3 +802,5 @@ stompClient.connect({}, function(frame) {
 ---
 
 This API documentation provides comprehensive information about all available endpoints in the LegacyKeep Chat Service. For additional examples or questions, please refer to the source code or contact the development team.
+
+

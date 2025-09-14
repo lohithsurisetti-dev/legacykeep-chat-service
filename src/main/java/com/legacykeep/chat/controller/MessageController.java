@@ -68,7 +68,7 @@ public class MessageController {
      * Get message by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<MessageResponse>> getMessageById(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<MessageResponse>> getMessageById(@PathVariable("id") String id) {
         log.debug("Getting message by ID: {}", id);
         
         try {
@@ -91,7 +91,7 @@ public class MessageController {
      * Get message by UUID
      */
     @GetMapping("/uuid/{uuid}")
-    public ResponseEntity<ApiResponse<MessageResponse>> getMessageByUuid(@PathVariable String uuid) {
+    public ResponseEntity<ApiResponse<MessageResponse>> getMessageByUuid(@PathVariable("uuid") String uuid) {
         log.debug("Getting message by UUID: {}", uuid);
         
         try {
@@ -115,7 +115,7 @@ public class MessageController {
      */
     @PutMapping("/{id}/edit")
     public ResponseEntity<ApiResponse<MessageResponse>> editMessage(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @Valid @RequestBody EditMessageRequest request) {
         log.info("Editing message: {} by user: {}", id, request.getUserId());
         
@@ -136,7 +136,7 @@ public class MessageController {
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteMessage(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestParam Long userId) {
         log.info("Deleting message: {} by user: {}", id, userId);
         
@@ -155,7 +155,7 @@ public class MessageController {
      */
     @DeleteMapping("/{id}/everyone")
     public ResponseEntity<ApiResponse<Void>> deleteMessageForEveryone(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestParam Long userId) {
         log.info("Deleting message for everyone: {} by user: {}", id, userId);
         
@@ -174,7 +174,7 @@ public class MessageController {
      */
     @PostMapping("/{id}/forward")
     public ResponseEntity<ApiResponse<MessageResponse>> forwardMessage(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @Valid @RequestBody ForwardMessageRequest request) {
         log.info("Forwarding message: {} to chat room: {}", id, request.getToChatRoomId());
         
@@ -196,7 +196,7 @@ public class MessageController {
      */
     @PostMapping("/{id}/star")
     public ResponseEntity<ApiResponse<MessageResponse>> toggleStarMessage(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestParam Long userId) {
         log.info("Toggling star for message: {} by user: {}", id, userId);
         
@@ -224,7 +224,7 @@ public class MessageController {
      */
     @PostMapping("/{id}/reactions")
     public ResponseEntity<ApiResponse<MessageResponse>> addReaction(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @Valid @RequestBody ReactionRequest request) {
         log.info("Adding reaction {} to message: {} by user: {}", request.getEmoji(), id, request.getUserId());
         
@@ -252,8 +252,8 @@ public class MessageController {
      */
     @DeleteMapping("/{id}/reactions/{emoji}")
     public ResponseEntity<ApiResponse<MessageResponse>> removeReaction(
-            @PathVariable String id,
-            @PathVariable String emoji,
+            @PathVariable("id") String id,
+            @PathVariable("emoji") String emoji,
             @RequestParam Long userId) {
         log.info("Removing reaction {} from message: {} by user: {}", emoji, id, userId);
         
@@ -281,7 +281,7 @@ public class MessageController {
      */
     @PostMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markMessageAsRead(
-            @PathVariable String id,
+            @PathVariable("id") String id,
             @RequestParam Long userId) {
         log.debug("Marking message: {} as read by user: {}", id, userId);
         
@@ -306,7 +306,7 @@ public class MessageController {
      */
     @PostMapping("/room/{chatRoomId}/read-all")
     public ResponseEntity<ApiResponse<Void>> markMessagesAsReadInRoom(
-            @PathVariable Long chatRoomId,
+            @PathVariable("chatRoomId") Long chatRoomId,
             @RequestParam Long userId) {
         log.debug("Marking all messages in chat room: {} as read by user: {}", chatRoomId, userId);
         
@@ -331,7 +331,7 @@ public class MessageController {
      */
     @GetMapping("/room/{chatRoomId}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getMessagesInRoom(
-            @PathVariable Long chatRoomId,
+            @PathVariable("chatRoomId") Long chatRoomId,
             @PageableDefault(size = 50) Pageable pageable) {
         log.debug("Getting messages in chat room: {}", chatRoomId);
         
@@ -364,8 +364,8 @@ public class MessageController {
      */
     @GetMapping("/room/{chatRoomId}/before/{messageId}")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessagesBefore(
-            @PathVariable Long chatRoomId,
-            @PathVariable String messageId,
+            @PathVariable("chatRoomId") Long chatRoomId,
+            @PathVariable("messageId") String messageId,
             @RequestParam(defaultValue = "20") int limit) {
         log.debug("Getting {} messages before message: {} in chat room: {}", limit, messageId, chatRoomId);
         
@@ -388,8 +388,8 @@ public class MessageController {
      */
     @GetMapping("/room/{chatRoomId}/after/{messageId}")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessagesAfter(
-            @PathVariable Long chatRoomId,
-            @PathVariable String messageId,
+            @PathVariable("chatRoomId") Long chatRoomId,
+            @PathVariable("messageId") String messageId,
             @RequestParam(defaultValue = "20") int limit) {
         log.debug("Getting {} messages after message: {} in chat room: {}", limit, messageId, chatRoomId);
         
@@ -412,7 +412,7 @@ public class MessageController {
      */
     @GetMapping("/sender/{senderId}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getMessagesBySender(
-            @PathVariable Long senderId,
+            @PathVariable("senderId") Long senderId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting messages by sender: {}", senderId);
         
@@ -445,7 +445,7 @@ public class MessageController {
      */
     @GetMapping("/type/{type}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getMessagesByType(
-            @PathVariable MessageType type,
+            @PathVariable("type") MessageType type,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting messages by type: {}", type);
         
@@ -478,7 +478,7 @@ public class MessageController {
      */
     @GetMapping("/status/{status}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getMessagesByStatus(
-            @PathVariable MessageStatus status,
+            @PathVariable("status") MessageStatus status,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting messages by status: {}", status);
         
@@ -511,7 +511,7 @@ public class MessageController {
      */
     @GetMapping("/starred/user/{userId}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getStarredMessagesForUser(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting starred messages for user: {}", userId);
         
@@ -551,7 +551,7 @@ public class MessageController {
      */
     @GetMapping("/starred/room/{chatRoomId}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getStarredMessagesInRoom(
-            @PathVariable Long chatRoomId,
+            @PathVariable("chatRoomId") Long chatRoomId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting starred messages in chat room: {}", chatRoomId);
         
@@ -747,7 +747,7 @@ public class MessageController {
      */
     @GetMapping("/story/{storyId}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getMessagesByStory(
-            @PathVariable Long storyId,
+            @PathVariable("storyId") Long storyId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting messages by story: {}", storyId);
         
@@ -787,7 +787,7 @@ public class MessageController {
      */
     @GetMapping("/memory/{memoryId}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getMessagesByMemory(
-            @PathVariable Long memoryId,
+            @PathVariable("memoryId") Long memoryId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting messages by memory: {}", memoryId);
         
@@ -827,7 +827,7 @@ public class MessageController {
      */
     @GetMapping("/event/{eventId}")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> getMessagesByEvent(
-            @PathVariable Long eventId,
+            @PathVariable("eventId") Long eventId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting messages by event: {}", eventId);
         
@@ -907,7 +907,7 @@ public class MessageController {
      */
     @GetMapping("/room/{chatRoomId}/search")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> searchMessagesByContentInRoom(
-            @PathVariable Long chatRoomId,
+            @PathVariable("chatRoomId") Long chatRoomId,
             @RequestParam String content,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Searching messages by content: {} in chat room: {}", content, chatRoomId);
@@ -947,7 +947,7 @@ public class MessageController {
      * Get message statistics for a user
      */
     @GetMapping("/stats/user/{userId}")
-    public ResponseEntity<ApiResponse<MessageStats>> getMessageStatsForUser(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<MessageStats>> getMessageStatsForUser(@PathVariable("userId") Long userId) {
         log.debug("Getting message statistics for user: {}", userId);
         
         try {
@@ -965,7 +965,7 @@ public class MessageController {
      * Get message statistics for a room
      */
     @GetMapping("/stats/room/{chatRoomId}")
-    public ResponseEntity<ApiResponse<MessageStats>> getMessageStatsForRoom(@PathVariable Long chatRoomId) {
+    public ResponseEntity<ApiResponse<MessageStats>> getMessageStatsForRoom(@PathVariable("chatRoomId") Long chatRoomId) {
         log.debug("Getting message statistics for chat room: {}", chatRoomId);
         
         try {
@@ -983,7 +983,7 @@ public class MessageController {
      * Get latest message in a room
      */
     @GetMapping("/room/{chatRoomId}/latest")
-    public ResponseEntity<ApiResponse<MessageResponse>> getLatestMessageInRoom(@PathVariable Long chatRoomId) {
+    public ResponseEntity<ApiResponse<MessageResponse>> getLatestMessageInRoom(@PathVariable("chatRoomId") Long chatRoomId) {
         log.debug("Getting latest message in chat room: {}", chatRoomId);
         
         try {

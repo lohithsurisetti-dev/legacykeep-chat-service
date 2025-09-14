@@ -530,3 +530,5 @@ public class ChatRoomServiceImpl implements ChatRoomService {
 ---
 
 This technical documentation provides comprehensive information about the LegacyKeep Chat Service implementation, architecture, and configuration. For additional details or questions, please refer to the source code or contact the development team.
+
+

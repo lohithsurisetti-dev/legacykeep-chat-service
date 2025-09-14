@@ -78,7 +78,7 @@ public class ChatRoomController {
      * Get chat room by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoomById(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoomById(@PathVariable("id") Long id) {
         log.debug("Getting chat room by ID: {}", id);
         
         try {
@@ -111,7 +111,7 @@ public class ChatRoomController {
      * Get chat room by UUID
      */
     @GetMapping("/uuid/{uuid}")
-    public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoomByUuid(@PathVariable String uuid) {
+    public ResponseEntity<ApiResponse<ChatRoomResponse>> getChatRoomByUuid(@PathVariable("uuid") String uuid) {
         log.debug("Getting chat room by UUID: {}", uuid);
         
         try {
@@ -145,7 +145,7 @@ public class ChatRoomController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> updateChatRoom(
-            @PathVariable Long id, 
+            @PathVariable("id") Long id, 
             @Valid @RequestBody UpdateChatRoomRequest request) {
         log.info("Updating chat room: {} by user: {}", id, request.getUpdatedByUserId());
         
@@ -172,7 +172,7 @@ public class ChatRoomController {
      * Delete chat room
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteChatRoom(@PathVariable Long id, @RequestParam Long userId) {
+    public ResponseEntity<ApiResponse<Void>> deleteChatRoom(@PathVariable("id") Long id, @RequestParam Long userId) {
         log.info("Deleting chat room: {} by user: {}", id, userId);
         
         try {
@@ -235,7 +235,7 @@ public class ChatRoomController {
      */
     @GetMapping("/type/{type}")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> getChatRoomsByType(
-            @PathVariable ChatRoomType type,
+            @PathVariable("type") ChatRoomType type,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting chat rooms by type: {}", type);
         
@@ -275,7 +275,7 @@ public class ChatRoomController {
      */
     @GetMapping("/status/{status}")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> getChatRoomsByStatus(
-            @PathVariable ChatRoomStatus status,
+            @PathVariable("status") ChatRoomStatus status,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting chat rooms by status: {}", status);
         
@@ -315,7 +315,7 @@ public class ChatRoomController {
      */
     @GetMapping("/creator/{creatorId}")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> getChatRoomsByCreator(
-            @PathVariable Long creatorId,
+            @PathVariable("creatorId") Long creatorId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting chat rooms by creator: {}", creatorId);
         
@@ -355,7 +355,7 @@ public class ChatRoomController {
      */
     @GetMapping("/family/{familyId}")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> getChatRoomsByFamily(
-            @PathVariable Long familyId,
+            @PathVariable("familyId") Long familyId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting chat rooms by family: {}", familyId);
         
@@ -395,7 +395,7 @@ public class ChatRoomController {
      */
     @GetMapping("/story/{storyId}")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> getChatRoomsByStory(
-            @PathVariable Long storyId,
+            @PathVariable("storyId") Long storyId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting chat rooms by story: {}", storyId);
         
@@ -435,7 +435,7 @@ public class ChatRoomController {
      */
     @GetMapping("/event/{eventId}")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> getChatRoomsByEvent(
-            @PathVariable Long eventId,
+            @PathVariable("eventId") Long eventId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting chat rooms by event: {}", eventId);
         
@@ -475,7 +475,7 @@ public class ChatRoomController {
      */
     @GetMapping("/participant/{userId}")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> getChatRoomsByParticipant(
-            @PathVariable Long userId,
+            @PathVariable("userId") Long userId,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Getting chat rooms by participant: {}", userId);
         
@@ -712,7 +712,7 @@ public class ChatRoomController {
      */
     @PostMapping("/{id}/participants")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> addParticipant(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody AddParticipantRequest request) {
         log.info("Adding participant {} to chat room: {} by user: {}", request.getUserId(), id, request.getAddedByUserId());
         
@@ -740,8 +740,8 @@ public class ChatRoomController {
      */
     @DeleteMapping("/{id}/participants/{userId}")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> removeParticipant(
-            @PathVariable Long id,
-            @PathVariable Long userId,
+            @PathVariable("id") Long id,
+            @PathVariable("userId") Long userId,
             @RequestParam Long removedByUserId) {
         log.info("Removing participant {} from chat room: {} by user: {}", userId, id, removedByUserId);
         
@@ -774,7 +774,7 @@ public class ChatRoomController {
      */
     @PostMapping("/{id}/archive")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> archiveChatRoom(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody ArchiveChatRoomRequest request) {
         log.info("Archiving chat room: {} by user: {}", id, request.getArchivedByUserId());
         
@@ -802,7 +802,7 @@ public class ChatRoomController {
      */
     @PostMapping("/{id}/unarchive")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> unarchiveChatRoom(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestParam Long userId) {
         log.info("Unarchiving chat room: {} by user: {}", id, userId);
         
@@ -830,7 +830,7 @@ public class ChatRoomController {
      */
     @PostMapping("/{id}/mute")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> muteChatRoom(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody MuteChatRoomRequest request) {
         log.info("Muting chat room: {} by user: {}", id, request.getMutedByUserId());
         
@@ -858,7 +858,7 @@ public class ChatRoomController {
      */
     @PostMapping("/{id}/unmute")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> unmuteChatRoom(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @RequestParam Long userId) {
         log.info("Unmuting chat room: {} by user: {}", id, userId);
         
@@ -886,7 +886,7 @@ public class ChatRoomController {
      */
     @PutMapping("/{id}/settings")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> updateChatRoomSettings(
-            @PathVariable Long id,
+            @PathVariable("id") Long id,
             @Valid @RequestBody UpdateChatRoomSettingsRequest request) {
         log.info("Updating chat room settings for: {} by user: {}", id, request.getUpdatedByUserId());
         
@@ -913,7 +913,7 @@ public class ChatRoomController {
      * Get chat room statistics
      */
     @GetMapping("/{id}/stats")
-    public ResponseEntity<ApiResponse<ChatRoomService.ChatRoomStats>> getChatRoomStats(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<ChatRoomService.ChatRoomStats>> getChatRoomStats(@PathVariable("id") Long id) {
         log.debug("Getting chat room statistics for: {}", id);
         
         try {
@@ -970,7 +970,7 @@ public class ChatRoomController {
      * Get chat room participants
      */
     @GetMapping("/{id}/participants")
-    public ResponseEntity<ApiResponse<List<Long>>> getChatRoomParticipants(@PathVariable Long id) {
+    public ResponseEntity<ApiResponse<List<Long>>> getChatRoomParticipants(@PathVariable("id") Long id) {
         log.debug("Getting participants for chat room: {}", id);
         
         try {
