@@ -2,6 +2,9 @@ package com.legacykeep.chat.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.legacykeep.chat.dto.request.CreateChatRoomRequest;
+import com.legacykeep.chat.dto.request.SendMessageRequest;
+import com.legacykeep.chat.dto.request.ReactionRequest;
 import com.legacykeep.chat.enums.ChatRoomType;
 import com.legacykeep.chat.enums.MessageType;
 import org.junit.jupiter.api.Test;
@@ -142,7 +145,7 @@ class DtoSerializationTest {
     @Test
     void testReactionRequestSerialization() throws Exception {
         ReactionRequest request = ReactionRequest.builder()
-                .reaction("👍")
+                .emoji("👍")
                 .reactionType("EMOJI")
                 .build();
 

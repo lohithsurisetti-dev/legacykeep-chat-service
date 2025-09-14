@@ -1,4 +1,4 @@
-package com.legacykeep.chat.dto;
+package com.legacykeep.chat.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.NotBlank;
@@ -22,11 +22,16 @@ import lombok.NoArgsConstructor;
 public class ReactionRequest {
     
     /**
+     * User ID adding the reaction
+     */
+    private Long userId;
+    
+    /**
      * Reaction emoji or type
      */
     @NotBlank(message = "Reaction is required")
     @Size(max = 10, message = "Reaction must not exceed 10 characters")
-    private String reaction;
+    private String emoji;
     
     /**
      * Reaction type (EMOJI, CUSTOM, STICKER, GIF, ANIMATION)

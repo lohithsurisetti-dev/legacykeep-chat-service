@@ -1,4 +1,4 @@
-package com.legacykeep.chat.dto;
+package com.legacykeep.chat.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.legacykeep.chat.enums.ChatRoomType;
@@ -25,6 +25,12 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CreateChatRoomRequest {
+    
+    /**
+     * Creator user ID
+     */
+    @NotNull(message = "Creator user ID is required")
+    private Long createdByUserId;
     
     /**
      * Chat room name
@@ -96,4 +102,25 @@ public class CreateChatRoomRequest {
      * Additional metadata
      */
     private Map<String, Object> metadata;
+    
+    /**
+     * Getter for room name (alias for roomName)
+     */
+    public String getName() {
+        return roomName;
+    }
+    
+    /**
+     * Getter for room description (alias for roomDescription)
+     */
+    public String getDescription() {
+        return roomDescription;
+    }
+    
+    /**
+     * Getter for room type (alias for roomType)
+     */
+    public ChatRoomType getType() {
+        return roomType;
+    }
 }

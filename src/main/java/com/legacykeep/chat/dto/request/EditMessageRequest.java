@@ -1,4 +1,4 @@
-package com.legacykeep.chat.dto;
+package com.legacykeep.chat.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Size;
@@ -21,6 +21,11 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class EditMessageRequest {
+    
+    /**
+     * User ID performing the edit
+     */
+    private Long userId;
     
     /**
      * Updated message content
@@ -51,4 +56,11 @@ public class EditMessageRequest {
      * Updated message metadata
      */
     private Map<String, Object> metadata;
+    
+    /**
+     * Getter for new content (alias for content)
+     */
+    public String getNewContent() {
+        return content;
+    }
 }

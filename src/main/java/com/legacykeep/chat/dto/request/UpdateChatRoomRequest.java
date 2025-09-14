@@ -1,4 +1,4 @@
-package com.legacykeep.chat.dto;
+package com.legacykeep.chat.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.validation.constraints.Size;
@@ -21,6 +21,11 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UpdateChatRoomRequest {
+    
+    /**
+     * User ID who is updating the chat room
+     */
+    private Long updatedByUserId;
     
     /**
      * Chat room name

@@ -1,4 +1,4 @@
-package com.legacykeep.chat.dto;
+package com.legacykeep.chat.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.legacykeep.chat.enums.MessageType;
@@ -23,6 +23,18 @@ import java.util.Map;
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SendMessageRequest {
+    
+    /**
+     * Chat room ID
+     */
+    @NotNull(message = "Chat room ID is required")
+    private Long chatRoomId;
+    
+    /**
+     * Sender user ID
+     */
+    @NotNull(message = "Sender user ID is required")
+    private Long senderUserId;
     
     /**
      * Message type
@@ -67,12 +79,45 @@ public class SendMessageRequest {
     @Size(max = 50, message = "Mood tag must not exceed 50 characters")
     private String moodTag;
     
+    /**
+     * Tone confidence level
+     */
+    private Double toneConfidence;
+    
+    /**
+     * Voice emotion detected
+     */
+    @Size(max = 50, message = "Voice emotion must not exceed 50 characters")
+    private String voiceEmotion;
+    
+    /**
+     * Memory triggers
+     */
+    private java.util.List<String> memoryTriggers;
+    
+    /**
+     * Predictive text suggestions
+     */
+    private java.util.List<String> predictiveText;
+    
+    /**
+     * AI tone suggestion
+     */
+    @Size(max = 100, message = "AI tone suggestion must not exceed 100 characters")
+    private String aiToneSuggestion;
+    
     // Advanced Features - Password Protection
     /**
      * Whether the message should be protected
      */
     @Builder.Default
     private Boolean isProtected = false;
+    
+    /**
+     * Whether the message is encrypted
+     */
+    @Builder.Default
+    private Boolean isEncrypted = false;
     
     /**
      * Protection level
@@ -87,9 +132,20 @@ public class SendMessageRequest {
     private String password;
     
     /**
+     * Password hash for protected message
+     */
+    @Size(max = 255, message = "Password hash must not exceed 255 characters")
+    private String passwordHash;
+    
+    /**
      * Self-destruct duration in minutes
      */
     private Integer selfDestructMinutes;
+    
+    /**
+     * Self-destruct timestamp
+     */
+    private java.time.LocalDateTime selfDestructAt;
     
     /**
      * Whether screenshot protection should be enabled

@@ -91,6 +91,7 @@ public class ApiResponse<T> {
                 .build();
     }
     
+    
     /**
      * Create an error response.
      * 
@@ -198,5 +199,71 @@ public class ApiResponse<T> {
      */
     public static <T> ApiResponse<T> permissionDenied(String action) {
         return error("Permission denied", "You don't have permission to " + action, 403);
+    }
+    
+    /**
+     * Create a new builder instance
+     */
+    public static <T> ApiResponseBuilder<T> builder() {
+        return new ApiResponseBuilder<>();
+    }
+    
+    /**
+     * Custom builder class with additional methods
+     */
+    public static class ApiResponseBuilder<T> {
+        private String status;
+        private String message;
+        private T data;
+        private LocalDateTime timestamp;
+        private String error;
+        private Integer statusCode;
+        private String path;
+        
+        public ApiResponseBuilder<T> success(boolean success) {
+            this.status = success ? "success" : "error";
+            this.timestamp = LocalDateTime.now();
+            this.statusCode = success ? 200 : 500;
+            return this;
+        }
+        
+        public ApiResponseBuilder<T> status(String status) {
+            this.status = status;
+            return this;
+        }
+        
+        public ApiResponseBuilder<T> message(String message) {
+            this.message = message;
+            return this;
+        }
+        
+        public ApiResponseBuilder<T> data(T data) {
+            this.data = data;
+            return this;
+        }
+        
+        public ApiResponseBuilder<T> timestamp(LocalDateTime timestamp) {
+            this.timestamp = timestamp;
+            return this;
+        }
+        
+        public ApiResponseBuilder<T> error(String error) {
+            this.error = error;
+            return this;
+        }
+        
+        public ApiResponseBuilder<T> statusCode(Integer statusCode) {
+            this.statusCode = statusCode;
+            return this;
+        }
+        
+        public ApiResponseBuilder<T> path(String path) {
+            this.path = path;
+            return this;
+        }
+        
+        public ApiResponse<T> build() {
+            return new ApiResponse<>(status, message, data, timestamp, error, statusCode, path);
+        }
     }
 }
