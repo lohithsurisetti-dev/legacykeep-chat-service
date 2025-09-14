@@ -681,12 +681,108 @@ The Chat Service is now fully implemented with all features working correctly:
 - Updated DTOs to handle String message IDs correctly
 - Implemented complete encryption and key management system
 
+## 🚫 **Content Filter System**
+
+### **Global Filters**
+```bash
+# Get user's global filters
+curl -X GET "http://localhost:8083/chat/api/v1/filters/global?userId=1" \
+  -H "Content-Type: application/json"
+
+# Add word filter globally
+curl -X POST "http://localhost:8083/chat/api/v1/filters/global?userId=1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "work",
+    "filterType": "WORD",
+    "description": "Block work-related messages"
+  }'
+
+# Add emoji filter globally
+curl -X POST "http://localhost:8083/chat/api/v1/filters/global?userId=1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "😡",
+    "filterType": "EMOJI",
+    "description": "Block angry emoji"
+  }'
+
+# Remove global filter
+curl -X DELETE "http://localhost:8083/chat/api/v1/filters/global/1?userId=1" \
+  -H "Content-Type: application/json"
+```
+
+### **Contact-Specific Filters**
+```bash
+# Get contact filters
+curl -X GET "http://localhost:8083/chat/api/v1/filters/contacts/2?userId=1" \
+  -H "Content-Type: application/json"
+
+# Add contact-specific filter
+curl -X POST "http://localhost:8083/chat/api/v1/filters/contacts/2?userId=1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "politics",
+    "filterType": "WORD",
+    "description": "Block political discussions from this contact"
+  }'
+
+# Remove contact filter
+curl -X DELETE "http://localhost:8083/chat/api/v1/filters/contacts/2/1?userId=1" \
+  -H "Content-Type: application/json"
+```
+
+### **Room Filters**
+```bash
+# Get room filters
+curl -X GET "http://localhost:8083/chat/api/v1/filters/rooms/1" \
+  -H "Content-Type: application/json"
+
+# Add room filter
+curl -X POST "http://localhost:8083/chat/api/v1/filters/rooms/1?createdByUserId=1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "money",
+    "filterType": "WORD",
+    "description": "No financial discussions in family group"
+  }'
+
+# Remove room filter
+curl -X DELETE "http://localhost:8083/chat/api/v1/filters/rooms/1/1" \
+  -H "Content-Type: application/json"
+```
+
+### **Filter Testing**
+```bash
+# Test if content would be filtered
+curl -X POST "http://localhost:8083/chat/api/v1/filters/test?senderUserId=2&receiverUserId=1&roomId=1&content=I%20have%20work%20to%20do" \
+  -H "Content-Type: application/json"
+
+# Test contact-specific filtering
+curl -X POST "http://localhost:8083/chat/api/v1/filters/test?senderUserId=2&receiverUserId=1&roomId=1&content=I%20love%20politics" \
+  -H "Content-Type: application/json"
+
+# Test room filtering
+curl -X POST "http://localhost:8083/chat/api/v1/filters/test?senderUserId=3&receiverUserId=1&roomId=1&content=Lets%20talk%20about%20money" \
+  -H "Content-Type: application/json"
+```
+
+### **Filter Features:**
+- ✅ **Global Filters**: Apply to all messages from all contacts and groups
+- ✅ **Contact Filters**: Apply only to messages from specific contacts
+- ✅ **Room Filters**: Apply to all messages in specific chat rooms
+- ✅ **Word Filtering**: Case-insensitive word boundary matching
+- ✅ **Emoji Filtering**: Exact emoji matching with Unicode support
+- ✅ **Filter Priority**: Global > Contact > Room
+- ✅ **Filter Testing**: Test content before sending messages
+- ✅ **Filter Management**: Add, remove, and list filters
+
 ### 📊 **Feature Coverage: 100%**
-All documented API endpoints have been tested and verified working. The service is ready for production deployment.
+All documented API endpoints have been tested and verified working. The service now includes a complete Content Filter System for family-friendly messaging. The service is ready for production deployment.
 
 ---
 
 **Last Updated:** September 14, 2025  
-**Service Version:** 2.0.0 (Production Ready)  
+**Service Version:** 2.1.0 (Production Ready with Content Filtering)  
 **Tested By:** LegacyKeep Development Team  
 **Status:** ✅ PRODUCTION READY

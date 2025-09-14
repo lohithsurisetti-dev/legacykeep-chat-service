@@ -484,4 +484,15 @@ public interface MessageService {
         public long getEventMessages() { return eventMessages; }
         public void setEventMessages(long eventMessages) { this.eventMessages = eventMessages; }
     }
+
+    /**
+     * Check if a message would be filtered for a specific user
+     */
+    boolean wouldMessageBeFiltered(Long senderUserId, Long receiverUserId, Long roomId, String content);
+
+    /**
+     * Send a message with content filtering applied
+     * Returns null if message is filtered, otherwise returns the sent message
+     */
+    Message sendMessageWithFiltering(SendMessageRequest request);
 }

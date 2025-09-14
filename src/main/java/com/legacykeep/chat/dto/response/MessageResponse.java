@@ -75,6 +75,12 @@ public class MessageResponse {
     private LocalDateTime deletedAt;
     private Long deletedByUserId;
     private Boolean isDeletedForEveryone;
+    
+    // Content Filtering Fields
+    private Boolean isFiltered;
+    private List<String> filteredReasons;
+    private List<String> applicableFilterTypes;
+    private String filterStatus; // "FILTERED", "ALLOWED", "OVERRIDDEN"
 
     /**
      * Convert Message entity to MessageResponse DTO.
@@ -137,5 +143,34 @@ public class MessageResponse {
                 .deletedByUserId(message.getDeletedByUserId())
                 .isDeletedForEveryone(message.getIsDeletedForEveryone())
                 .build();
+    }
+
+    /**
+     * Convert Message entity to MessageResponse DTO with filter information.
+     */
+    public static MessageResponse fromEntityWithFilters(Message message, Long requestingUserId, 
+                                                       Boolean isFiltered, List<String> filteredReasons, 
+                                                       List<String> applicableFilterTypes) {
+        if (message == null) {
+            return null;
+        }
+
+        MessageResponse response = fromEntity(message);
+        
+        // Set filter information
+        response.setIsFiltered(isFiltered);
+        response.setFilteredReasons(filteredReasons);
+        response.setApplicableFilterTypes(applicableFilterTypes);
+        
+        // Set filter status
+        if (isFiltered != null && isFiltered) {
+            response.setFilterStatus("FILTERED");
+            // Mask the content for filtered messages
+            response.setContent("[Content Filtered]");
+        } else {
+            response.setFilterStatus("ALLOWED");
+        }
+        
+        return response;
     }
 }

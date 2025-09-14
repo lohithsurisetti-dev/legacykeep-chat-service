@@ -12,6 +12,7 @@ import com.legacykeep.chat.entity.Message;
 import com.legacykeep.chat.enums.MessageStatus;
 import com.legacykeep.chat.enums.MessageType;
 import com.legacykeep.chat.service.MessageService;
+import com.legacykeep.chat.service.ContentFilterService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 public class MessageController {
 
     private final MessageService messageService;
+    private final ContentFilterService contentFilterService;
 
     /**
      * Send a new message
@@ -68,13 +70,45 @@ public class MessageController {
      * Get message by ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<MessageResponse>> getMessageById(@PathVariable("id") String id) {
-        log.debug("Getting message by ID: {}", id);
+    public ResponseEntity<ApiResponse<MessageResponse>> getMessageById(
+            @PathVariable("id") String id,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        log.debug("Getting message by ID: {} for user: {}", id, userId);
         
         try {
             Optional<Message> message = messageService.getMessageById(id);
             if (message.isPresent()) {
-                MessageResponse response = MessageResponse.fromEntity(message.get());
+                MessageResponse response;
+                
+                // If userId is provided, check for filtering
+                if (userId != null) {
+                    Message msg = message.get();
+                    boolean isFiltered = messageService.wouldMessageBeFiltered(
+                        msg.getSenderUserId(), userId, msg.getChatRoomId(), msg.getContent());
+                    
+                    if (isFiltered) {
+                        // Get filter reasons
+                        List<com.legacykeep.chat.dto.response.FilterResponse> applicableFilters = 
+                            contentFilterService.getApplicableFilters(
+                                msg.getSenderUserId(), userId, msg.getChatRoomId(), msg.getContent());
+                        
+                        List<String> filteredReasons = applicableFilters.stream()
+                            .map(filter -> "Contains: \"" + filter.getContent() + "\" (" + filter.getFilterType() + ")")
+                            .toList();
+                        
+                        List<String> filterTypes = applicableFilters.stream()
+                            .map(filter -> filter.getFilterType().toString())
+                            .toList();
+                        
+                        response = MessageResponse.fromEntityWithFilters(msg, userId, true, filteredReasons, filterTypes);
+                    } else {
+                        response = MessageResponse.fromEntityWithFilters(msg, userId, false, null, null);
+                    }
+                } else {
+                    // No userId provided, return normal response
+                    response = MessageResponse.fromEntity(message.get());
+                }
+                
                 return ResponseEntity.ok(ApiResponse.success(response, "Message retrieved successfully"));
             } else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
