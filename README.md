@@ -6,6 +6,7 @@ A comprehensive, production-ready chat service for the LegacyKeep family communi
 
 ### Core Messaging
 - **Real-time messaging** with WebSocket support
+- **Group messaging** with multi-user chat rooms
 - **Message CRUD operations** (create, read, update, delete)
 - **Message forwarding** and replies
 - **Message reactions** with emoji support
@@ -45,6 +46,16 @@ A comprehensive, production-ready chat service for the LegacyKeep family communi
 - **UI-ready filtering** - Messages marked as filtered for client-side masking
 - **Filter management** - Add, remove, and list filters via API
 - **Filter testing** - Test content before sending messages
+
+### WebSocket Real-time Features
+- **Live message broadcasting** to all room participants
+- **Typing indicators** for real-time user activity
+- **Connection status** monitoring and management
+- **Multi-user group chat** with instant message delivery
+- **Simultaneous messaging** support for high-traffic rooms
+- **User subscription management** for targeted notifications
+- **System notifications** and error handling
+- **WebSocket statistics** and monitoring
 
 ### Analytics & Insights
 - **Real-time analytics** dashboard

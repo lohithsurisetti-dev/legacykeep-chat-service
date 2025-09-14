@@ -4,8 +4,10 @@ import com.legacykeep.chat.dto.ApiResponse;
 import com.legacykeep.chat.dto.request.TypingIndicatorRequest;
 import com.legacykeep.chat.dto.request.ConnectionStatusRequest;
 import com.legacykeep.chat.dto.request.SubscriptionRequest;
+import com.legacykeep.chat.dto.request.SendMessageRequest;
 import com.legacykeep.chat.dto.response.WebSocketStats;
 import com.legacykeep.chat.service.WebSocketService;
+import com.legacykeep.chat.service.MessageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -35,6 +37,25 @@ import java.util.Map;
 public class WebSocketController {
 
     private final WebSocketService webSocketService;
+    private final MessageService messageService;
+
+    /**
+     * Handle incoming chat messages via WebSocket
+     */
+    @MessageMapping("/messages")
+    public void handleChatMessage(@Payload SendMessageRequest request, SimpMessageHeaderAccessor headerAccessor) {
+        log.debug("Received chat message from user: {} in chat room: {} - content: {}", 
+                request.getSenderUserId(), request.getChatRoomId(), request.getContent());
+        
+        try {
+            // Send the message through the message service (which will handle WebSocket broadcasting)
+            messageService.sendMessage(request);
+            log.info("Message processed and broadcasted via WebSocket from user: {} to room: {}", 
+                    request.getSenderUserId(), request.getChatRoomId());
+        } catch (Exception e) {
+            log.error("Error handling chat message: {}", e.getMessage(), e);
+        }
+    }
 
     /**
      * Handle typing indicator via WebSocket
@@ -178,7 +199,7 @@ public class WebSocketController {
      * Get connected users in a chat room
      */
     @GetMapping("/connected-users/room/{chatRoomId}")
-    public ResponseEntity<ApiResponse<List<Long>>> getConnectedUsersInRoom(@PathVariable Long chatRoomId) {
+    public ResponseEntity<ApiResponse<List<Long>>> getConnectedUsersInRoom(@PathVariable("chatRoomId") Long chatRoomId) {
         log.debug("Getting connected users in chat room: {}", chatRoomId);
         
         try {
@@ -202,7 +223,7 @@ public class WebSocketController {
      * Get connected users in a family
      */
     @GetMapping("/connected-users/family/{familyId}")
-    public ResponseEntity<ApiResponse<List<Long>>> getConnectedUsersInFamily(@PathVariable Long familyId) {
+    public ResponseEntity<ApiResponse<List<Long>>> getConnectedUsersInFamily(@PathVariable("familyId") Long familyId) {
         log.debug("Getting connected users in family: {}", familyId);
         
         try {
@@ -226,7 +247,7 @@ public class WebSocketController {
      * Check if user is connected
      */
     @GetMapping("/connected-users/{userId}/status")
-    public ResponseEntity<ApiResponse<Boolean>> isUserConnected(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<Boolean>> isUserConnected(@PathVariable("userId") Long userId) {
         log.debug("Checking if user is connected: {}", userId);
         
         try {
@@ -251,8 +272,8 @@ public class WebSocketController {
      */
     @GetMapping("/connected-users/{userId}/room/{chatRoomId}/status")
     public ResponseEntity<ApiResponse<Boolean>> isUserConnectedToRoom(
-            @PathVariable Long userId,
-            @PathVariable Long chatRoomId) {
+            @PathVariable("userId") Long userId,
+            @PathVariable("chatRoomId") Long chatRoomId) {
         log.debug("Checking if user: {} is connected to room: {}", userId, chatRoomId);
         
         try {
@@ -276,7 +297,7 @@ public class WebSocketController {
      * Get user connection information
      */
     @GetMapping("/connected-users/{userId}/info")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getUserConnectionInfo(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getUserConnectionInfo(@PathVariable("userId") Long userId) {
         log.debug("Getting user connection info: {}", userId);
         
         try {
@@ -300,7 +321,7 @@ public class WebSocketController {
      * Get user subscription information
      */
     @GetMapping("/subscriptions/{userId}")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> getUserSubscriptionInfo(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getUserSubscriptionInfo(@PathVariable("userId") Long userId) {
         log.debug("Getting user subscription info: {}", userId);
         
         try {
@@ -324,7 +345,7 @@ public class WebSocketController {
      * Disconnect a user
      */
     @PostMapping("/disconnect/{userId}")
-    public ResponseEntity<ApiResponse<Void>> disconnectUser(@PathVariable Long userId) {
+    public ResponseEntity<ApiResponse<Void>> disconnectUser(@PathVariable("userId") Long userId) {
         log.info("Disconnecting user: {}", userId);
         
         try {
@@ -348,8 +369,8 @@ public class WebSocketController {
      */
     @PostMapping("/disconnect/{userId}/room/{chatRoomId}")
     public ResponseEntity<ApiResponse<Void>> disconnectUserFromRoom(
-            @PathVariable Long userId,
-            @PathVariable Long chatRoomId) {
+            @PathVariable("userId") Long userId,
+            @PathVariable("chatRoomId") Long chatRoomId) {
         log.info("Disconnecting user: {} from room: {}", userId, chatRoomId);
         
         try {
@@ -580,8 +601,8 @@ public class WebSocketController {
      */
     @PostMapping("/notify/user/{userId}")
     public ResponseEntity<ApiResponse<Void>> sendSystemNotification(
-            @PathVariable Long userId,
-            @RequestParam String notificationType,
+            @PathVariable("userId") Long userId,
+            @RequestParam("notificationType") String notificationType,
             @RequestBody(required = false) Map<String, Object> notificationData) {
         log.info("Sending system notification to user: {} - type: {}", userId, notificationType);
         
@@ -606,9 +627,9 @@ public class WebSocketController {
      */
     @PostMapping("/notify/user/{userId}/error")
     public ResponseEntity<ApiResponse<Void>> sendErrorNotification(
-            @PathVariable Long userId,
-            @RequestParam String errorType,
-            @RequestParam String errorMessage) {
+            @PathVariable("userId") Long userId,
+            @RequestParam("errorType") String errorType,
+            @RequestParam("errorMessage") String errorMessage) {
         log.info("Sending error notification to user: {} - type: {}", userId, errorType);
         
         try {
@@ -657,8 +678,8 @@ public class WebSocketController {
      */
     @PostMapping("/broadcast/family/{familyId}")
     public ResponseEntity<ApiResponse<Void>> broadcastToFamily(
-            @PathVariable Long familyId,
-            @RequestParam String messageType,
+            @PathVariable("familyId") Long familyId,
+            @RequestParam("messageType") String messageType,
             @RequestBody(required = false) Map<String, Object> messageData) {
         log.info("Broadcasting to family: {} - type: {}", familyId, messageType);
         
@@ -683,8 +704,8 @@ public class WebSocketController {
      */
     @PostMapping("/broadcast/room/{chatRoomId}")
     public ResponseEntity<ApiResponse<Void>> broadcastToChatRoom(
-            @PathVariable Long chatRoomId,
-            @RequestParam String messageType,
+            @PathVariable("chatRoomId") Long chatRoomId,
+            @RequestParam("messageType") String messageType,
             @RequestBody(required = false) Map<String, Object> messageData) {
         log.info("Broadcasting to chat room: {} - type: {}", chatRoomId, messageType);
         
