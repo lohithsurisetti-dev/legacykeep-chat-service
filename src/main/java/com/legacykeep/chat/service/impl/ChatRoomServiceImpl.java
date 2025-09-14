@@ -419,7 +419,7 @@ public class ChatRoomServiceImpl implements ChatRoomService {
     }
 
     @Override
-    public void updateLastMessageInfo(Long chatRoomId, Long messageId, Long senderUserId) {
+    public void updateLastMessageInfo(Long chatRoomId, String messageId, Long senderUserId) {
         log.debug("Updating last message info for chat room: {}", chatRoomId);
         
         ChatRoom chatRoom = chatRoomRepository.findById(chatRoomId)

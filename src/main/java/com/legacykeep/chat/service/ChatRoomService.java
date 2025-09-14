@@ -179,7 +179,7 @@ public interface ChatRoomService {
     /**
      * Update last message info for chat room
      */
-    void updateLastMessageInfo(Long chatRoomId, Long messageId, Long senderUserId);
+    void updateLastMessageInfo(Long chatRoomId, String messageId, Long senderUserId);
 
     /**
      * Increment message count for chat room

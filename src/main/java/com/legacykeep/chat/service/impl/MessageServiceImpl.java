@@ -9,6 +9,8 @@ import com.legacykeep.chat.enums.MessageStatus;
 import com.legacykeep.chat.enums.MessageType;
 import com.legacykeep.chat.repository.mongo.MessageRepository;
 import com.legacykeep.chat.service.ChatRoomService;
+import com.legacykeep.chat.service.EncryptionService;
+import com.legacykeep.chat.service.KeyManagementService;
 import com.legacykeep.chat.service.MessageService;
 import com.legacykeep.chat.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +40,8 @@ public class MessageServiceImpl implements MessageService {
     private final MessageRepository messageRepository;
     private final ChatRoomService chatRoomService;
     private final WebSocketService webSocketService;
+    private final EncryptionService encryptionService;
+    private final KeyManagementService keyManagementService;
 
     @Override
     public Message sendMessage(SendMessageRequest request) {
@@ -47,18 +51,42 @@ public class MessageServiceImpl implements MessageService {
         chatRoomService.getChatRoomById(request.getChatRoomId())
                 .orElseThrow(() -> new RuntimeException("Chat room not found with ID: " + request.getChatRoomId()));
 
+        // Handle encryption if requested
+        String messageContent = request.getContent();
+        boolean isEncrypted = request.getIsEncrypted() != null ? request.getIsEncrypted() : false;
+        
+        if (isEncrypted) {
+            log.debug("Encrypting message content for chat room: {}", request.getChatRoomId());
+            
+            // Get encryption key for the chat room
+            Optional<String> encryptionKeyOpt = keyManagementService.getChatRoomKey(request.getChatRoomId(), request.getSenderUserId());
+            if (encryptionKeyOpt.isEmpty()) {
+                // Generate new key if none exists
+                String newKey = keyManagementService.generateChatRoomKey(request.getChatRoomId(), request.getSenderUserId());
+                log.info("Generated new encryption key for chat room: {}", request.getChatRoomId());
+                
+                // Encrypt the message content
+                messageContent = encryptionService.encryptMessage(request.getContent(), newKey);
+            } else {
+                // Encrypt the message content with existing key
+                messageContent = encryptionService.encryptMessage(request.getContent(), encryptionKeyOpt.get());
+            }
+            
+            log.debug("Message content encrypted successfully");
+        }
+
         // Create message with advanced features
         Message message = Message.builder()
                 .messageUuid(UUID.randomUUID().toString())
                 .chatRoomId(request.getChatRoomId())
                 .senderUserId(request.getSenderUserId())
                 .messageType(request.getMessageType())
-                .content(request.getContent())
+                .content(messageContent) // Use encrypted content if encryption is enabled
                 .status(MessageStatus.SENT)
                 .replyToMessageId(request.getReplyToMessageId())
                 .forwardedFromMessageId(request.getForwardedFromMessageId())
                 .isStarred(false)
-                .isEncrypted(request.getIsEncrypted() != null ? request.getIsEncrypted() : false)
+                .isEncrypted(isEncrypted)
                 .isProtected(request.getIsProtected() != null ? request.getIsProtected() : false)
                 .protectionLevel(request.getProtectionLevel())
                 .passwordHash(request.getPasswordHash())
@@ -100,7 +128,7 @@ public class MessageServiceImpl implements MessageService {
         Message savedMessage = messageRepository.save(message);
         
         // Update chat room last message info
-        chatRoomService.updateLastMessageInfo(request.getChatRoomId(), Long.parseLong(savedMessage.getId()), request.getSenderUserId());
+        chatRoomService.updateLastMessageInfo(request.getChatRoomId(), savedMessage.getId(), request.getSenderUserId());
         chatRoomService.incrementMessageCount(request.getChatRoomId());
         
         // Send real-time notification
@@ -115,6 +143,101 @@ public class MessageServiceImpl implements MessageService {
     public Optional<Message> getMessageById(String id) {
         log.debug("Getting message by ID: {}", id);
         return messageRepository.findById(id);
+    }
+    
+    /**
+     * Get message by ID with decryption if needed
+     * 
+     * @param id Message ID
+     * @param userId User ID requesting the message (for key access)
+     * @return Optional containing the message with decrypted content if user has access
+     */
+    @Transactional(readOnly = true)
+    public Optional<Message> getMessageByIdWithDecryption(String id, Long userId) {
+        log.debug("Getting message by ID: {} for user: {}", id, userId);
+        
+        Optional<Message> messageOpt = messageRepository.findById(id);
+        if (messageOpt.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        Message message = messageOpt.get();
+        
+        // Decrypt content if message is encrypted and user has access
+        if (message.getIsEncrypted() != null && message.getIsEncrypted()) {
+            log.debug("Decrypting message content for user: {}", userId);
+            
+            Optional<String> encryptionKeyOpt = keyManagementService.getChatRoomKey(message.getChatRoomId(), userId);
+            if (encryptionKeyOpt.isEmpty()) {
+                log.warn("User {} does not have access to encryption key for message {}", userId, id);
+                return Optional.empty();
+            }
+            
+            try {
+                String decryptedContent = encryptionService.decryptMessage(message.getContent(), encryptionKeyOpt.get());
+                // Create a new message object with decrypted content
+                message = Message.builder()
+                        .id(message.getId())
+                        .messageUuid(message.getMessageUuid())
+                        .chatRoomId(message.getChatRoomId())
+                        .senderUserId(message.getSenderUserId())
+                        .messageType(message.getMessageType())
+                        .content(decryptedContent) // Decrypted content
+                        .status(message.getStatus())
+                        .replyToMessageId(message.getReplyToMessageId())
+                        .forwardedFromMessageId(message.getForwardedFromMessageId())
+                        .isStarred(message.getIsStarred())
+                        .isEncrypted(message.getIsEncrypted())
+                        .isProtected(message.getIsProtected())
+                        .protectionLevel(message.getProtectionLevel())
+                        .passwordHash(message.getPasswordHash())
+                        .selfDestructAt(message.getSelfDestructAt())
+                        .screenshotProtection(message.getScreenshotProtection())
+                        .viewCount(message.getViewCount())
+                        .maxViews(message.getMaxViews())
+                        .toneColor(message.getToneColor())
+                        .toneConfidence(message.getToneConfidence())
+                        .contextWrapper(message.getContextWrapper())
+                        .moodTag(message.getMoodTag())
+                        .voiceEmotion(message.getVoiceEmotion())
+                        .memoryTriggers(message.getMemoryTriggers())
+                        .predictiveText(message.getPredictiveText())
+                        .aiToneSuggestion(message.getAiToneSuggestion())
+                        .mediaUrl(message.getMediaUrl())
+                        .mediaThumbnailUrl(message.getMediaThumbnailUrl())
+                        .mediaSize(message.getMediaSize())
+                        .mediaDuration(message.getMediaDuration())
+                        .mediaFormat(message.getMediaFormat())
+                        .mediaMetadata(message.getMediaMetadata())
+                        .locationLatitude(message.getLocationLatitude())
+                        .locationLongitude(message.getLocationLongitude())
+                        .locationAddress(message.getLocationAddress())
+                        .locationName(message.getLocationName())
+                        .contactName(message.getContactName())
+                        .contactPhone(message.getContactPhone())
+                        .contactEmail(message.getContactEmail())
+                        .storyId(message.getStoryId())
+                        .memoryId(message.getMemoryId())
+                        .eventId(message.getEventId())
+                        .reactions(message.getReactions())
+                        .readBy(message.getReadBy())
+                        .metadata(message.getMetadata())
+                        .createdAt(message.getCreatedAt())
+                        .updatedAt(message.getUpdatedAt())
+                        .editedAt(message.getEditedAt())
+                        .deletedAt(message.getDeletedAt())
+                        .deletedByUserId(message.getDeletedByUserId())
+                        .isDeletedForEveryone(message.getIsDeletedForEveryone())
+                        .build();
+                
+                log.debug("Message content decrypted successfully for user: {}", userId);
+            } catch (Exception e) {
+                log.error("Failed to decrypt message {} for user {}: {}", id, userId, e.getMessage(), e);
+                return Optional.empty();
+            }
+        }
+        
+        return Optional.of(message);
     }
 
     @Override
@@ -257,7 +380,7 @@ public class MessageServiceImpl implements MessageService {
         Message savedForwardedMessage = messageRepository.save(forwardedMessage);
         
         // Update chat room last message info
-        chatRoomService.updateLastMessageInfo(request.getToChatRoomId(), Long.parseLong(savedForwardedMessage.getId()), request.getFromUserId());
+        chatRoomService.updateLastMessageInfo(request.getToChatRoomId(), savedForwardedMessage.getId(), request.getFromUserId());
         chatRoomService.incrementMessageCount(request.getToChatRoomId());
         
         // Send real-time notifications

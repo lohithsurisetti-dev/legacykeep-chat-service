@@ -137,7 +137,7 @@ public class MessageController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteMessage(
             @PathVariable("id") String id,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.info("Deleting message: {} by user: {}", id, userId);
         
         try {
@@ -156,7 +156,7 @@ public class MessageController {
     @DeleteMapping("/{id}/everyone")
     public ResponseEntity<ApiResponse<Void>> deleteMessageForEveryone(
             @PathVariable("id") String id,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.info("Deleting message for everyone: {} by user: {}", id, userId);
         
         try {
@@ -197,7 +197,7 @@ public class MessageController {
     @PostMapping("/{id}/star")
     public ResponseEntity<ApiResponse<MessageResponse>> toggleStarMessage(
             @PathVariable("id") String id,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.info("Toggling star for message: {} by user: {}", id, userId);
         
         try {
@@ -254,7 +254,7 @@ public class MessageController {
     public ResponseEntity<ApiResponse<MessageResponse>> removeReaction(
             @PathVariable("id") String id,
             @PathVariable("emoji") String emoji,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.info("Removing reaction {} from message: {} by user: {}", emoji, id, userId);
         
         try {
@@ -282,7 +282,7 @@ public class MessageController {
     @PostMapping("/{id}/read")
     public ResponseEntity<ApiResponse<Void>> markMessageAsRead(
             @PathVariable("id") String id,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.debug("Marking message: {} as read by user: {}", id, userId);
         
         try {
@@ -307,7 +307,7 @@ public class MessageController {
     @PostMapping("/room/{chatRoomId}/read-all")
     public ResponseEntity<ApiResponse<Void>> markMessagesAsReadInRoom(
             @PathVariable("chatRoomId") Long chatRoomId,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.debug("Marking all messages in chat room: {} as read by user: {}", chatRoomId, userId);
         
         try {
@@ -867,7 +867,7 @@ public class MessageController {
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> searchMessagesByContent(
-            @RequestParam String content,
+            @RequestParam("content") String content,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Searching messages by content: {}", content);
         
@@ -908,7 +908,7 @@ public class MessageController {
     @GetMapping("/room/{chatRoomId}/search")
     public ResponseEntity<ApiResponse<PaginatedMessageResponse>> searchMessagesByContentInRoom(
             @PathVariable("chatRoomId") Long chatRoomId,
-            @RequestParam String content,
+            @RequestParam("content") String content,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Searching messages by content: {} in chat room: {}", content, chatRoomId);
         

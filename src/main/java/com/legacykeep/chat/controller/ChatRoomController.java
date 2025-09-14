@@ -172,7 +172,7 @@ public class ChatRoomController {
      * Delete chat room
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteChatRoom(@PathVariable("id") Long id, @RequestParam Long userId) {
+    public ResponseEntity<ApiResponse<Void>> deleteChatRoom(@PathVariable("id") Long id, @RequestParam("userId") Long userId) {
         log.info("Deleting chat room: {} by user: {}", id, userId);
         
         try {
@@ -672,7 +672,7 @@ public class ChatRoomController {
      */
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<PaginatedChatRoomResponse>> searchChatRoomsByName(
-            @RequestParam String name,
+            @RequestParam("name") String name,
             @PageableDefault(size = 20) Pageable pageable) {
         log.debug("Searching chat rooms by name: {}", name);
         
@@ -742,7 +742,7 @@ public class ChatRoomController {
     public ResponseEntity<ApiResponse<ChatRoomResponse>> removeParticipant(
             @PathVariable("id") Long id,
             @PathVariable("userId") Long userId,
-            @RequestParam Long removedByUserId) {
+            @RequestParam("removedByUserId") Long removedByUserId) {
         log.info("Removing participant {} from chat room: {} by user: {}", userId, id, removedByUserId);
         
         try {
@@ -803,7 +803,7 @@ public class ChatRoomController {
     @PostMapping("/{id}/unarchive")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> unarchiveChatRoom(
             @PathVariable("id") Long id,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.info("Unarchiving chat room: {} by user: {}", id, userId);
         
         try {
@@ -859,7 +859,7 @@ public class ChatRoomController {
     @PostMapping("/{id}/unmute")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> unmuteChatRoom(
             @PathVariable("id") Long id,
-            @RequestParam Long userId) {
+            @RequestParam("userId") Long userId) {
         log.info("Unmuting chat room: {} by user: {}", id, userId);
         
         try {
@@ -938,8 +938,8 @@ public class ChatRoomController {
      */
     @GetMapping("/individual/check")
     public ResponseEntity<ApiResponse<ChatRoomResponse>> checkIndividualChat(
-            @RequestParam Long user1Id,
-            @RequestParam Long user2Id) {
+            @RequestParam("user1Id") Long user1Id,
+            @RequestParam("user2Id") Long user2Id) {
         log.debug("Checking individual chat between users: {} and {}", user1Id, user2Id);
         
         try {

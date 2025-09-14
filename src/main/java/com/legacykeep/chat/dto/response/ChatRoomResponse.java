@@ -34,7 +34,7 @@ public class ChatRoomResponse {
     private Long storyId;
     private Long eventId;
     private List<Long> participants;
-    private Long lastMessageId;
+    private String lastMessageId;
     private Long lastMessageSenderId;
     private LocalDateTime lastMessageAt;
     private Integer messageCount;

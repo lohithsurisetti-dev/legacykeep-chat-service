@@ -82,7 +82,7 @@ public class ChatRoom {
     private Boolean isMuted = false;
 
     @Column(name = "last_message_id")
-    private Long lastMessageId;
+    private String lastMessageId;
 
     @Column(name = "last_message_at")
     private LocalDateTime lastMessageAt;

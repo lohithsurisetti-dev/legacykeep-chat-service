@@ -32,6 +32,15 @@ public interface MessageService {
      * Get message by ID
      */
     Optional<Message> getMessageById(String id);
+    
+    /**
+     * Get message by ID with decryption if needed
+     * 
+     * @param id Message ID
+     * @param userId User ID requesting the message (for key access)
+     * @return Optional containing the message with decrypted content if user has access
+     */
+    Optional<Message> getMessageByIdWithDecryption(String id, Long userId);
 
     /**
      * Get message by UUID
