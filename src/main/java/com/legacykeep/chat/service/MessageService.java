@@ -4,7 +4,13 @@ import com.legacykeep.chat.dto.request.EditMessageRequest;
 import com.legacykeep.chat.dto.request.ForwardMessageRequest;
 import com.legacykeep.chat.dto.request.ReactionRequest;
 import com.legacykeep.chat.dto.request.SendMessageRequest;
+import com.legacykeep.chat.dto.request.EditMessageWithHistoryRequest;
+import com.legacykeep.chat.dto.request.DeleteMessageRequest;
+import com.legacykeep.chat.dto.request.ScheduleMessageRequest;
 import com.legacykeep.chat.entity.Message;
+import com.legacykeep.chat.entity.MessageEditHistory;
+import com.legacykeep.chat.entity.ScheduledMessage;
+import com.legacykeep.chat.dto.response.ThreadSummary;
 import com.legacykeep.chat.enums.MessageStatus;
 import com.legacykeep.chat.enums.MessageType;
 import org.springframework.data.domain.Page;
@@ -495,4 +501,303 @@ public interface MessageService {
      * Returns null if message is filtered, otherwise returns the sent message
      */
     Message sendMessageWithFiltering(SendMessageRequest request);
+
+    // ==================== SEARCH METHODS ====================
+
+    /**
+     * Search messages with full-text search
+     */
+    List<Message> searchMessages(String query, Long userId);
+
+    /**
+     * Search messages with full-text search and pagination
+     */
+    Page<Message> searchMessages(String query, Long userId, Pageable pageable);
+
+    /**
+     * Search messages with advanced filters
+     */
+    List<Message> searchMessagesWithFilters(String query, Long userId, Long chatRoomId, List<Long> chatRoomIds, 
+                                          Long senderUserId, LocalDateTime startDate, LocalDateTime endDate, 
+                                          Boolean isStarred, Boolean isEncrypted, Boolean includeDeleted);
+
+    /**
+     * Search messages with advanced filters and pagination
+     */
+    Page<Message> searchMessagesWithFilters(String query, Long userId, Long chatRoomId, List<Long> chatRoomIds, 
+                                          Long senderUserId, LocalDateTime startDate, LocalDateTime endDate, 
+                                          Boolean isStarred, Boolean isEncrypted, Boolean includeDeleted, Pageable pageable);
+
+    /**
+     * Search messages in specific chat room
+     */
+    List<Message> searchMessagesInRoom(String query, Long userId, Long chatRoomId);
+
+    /**
+     * Search messages in specific chat room with pagination
+     */
+    Page<Message> searchMessagesInRoom(String query, Long userId, Long chatRoomId, Pageable pageable);
+
+    /**
+     * Search messages by specific sender
+     */
+    List<Message> searchMessagesBySender(String query, Long userId, Long senderUserId);
+
+    /**
+     * Search messages by specific sender with pagination
+     */
+    Page<Message> searchMessagesBySender(String query, Long userId, Long senderUserId, Pageable pageable);
+
+    /**
+     * Get search suggestions based on query
+     */
+    List<String> getSearchSuggestions(String query, Long userId);
+
+    /**
+     * Get popular search terms
+     */
+    List<String> getPopularSearchTerms(Long userId);
+
+    // ==================== THREADING METHODS ====================
+
+    /**
+     * Get all replies to a specific message
+     */
+    List<Message> getRepliesToMessage(String messageId);
+
+    /**
+     * Get all replies to a specific message with pagination
+     */
+    Page<Message> getRepliesToMessage(String messageId, Pageable pageable);
+
+    /**
+     * Get all messages in a thread (original message + all replies)
+     */
+    List<Message> getThreadMessages(String messageId);
+
+    /**
+     * Get all messages in a thread with pagination
+     */
+    Page<Message> getThreadMessages(String messageId, Pageable pageable);
+
+    /**
+     * Get thread root messages (messages that are not replies)
+     */
+    List<Message> getThreadRootMessages(Long chatRoomId);
+
+    /**
+     * Get thread root messages with pagination
+     */
+    Page<Message> getThreadRootMessages(Long chatRoomId, Pageable pageable);
+
+    /**
+     * Count replies to a specific message
+     */
+    long countRepliesToMessage(String messageId);
+
+    /**
+     * Get latest reply in a thread
+     */
+    Message getLatestReplyInThread(String messageId);
+
+    /**
+     * Get thread summary with reply count
+     */
+    ThreadSummary getThreadSummary(String messageId);
+
+    // ==================== EDIT HISTORY METHODS ====================
+
+    /**
+     * Edit a message with history tracking
+     */
+    Message editMessageWithHistory(EditMessageWithHistoryRequest request);
+
+    /**
+     * Get edit history for a message
+     */
+    List<MessageEditHistory> getMessageEditHistory(String messageId);
+
+    /**
+     * Get edit history for a message with pagination
+     */
+    Page<MessageEditHistory> getMessageEditHistory(String messageId, Pageable pageable);
+
+    /**
+     * Get specific version of a message
+     */
+    MessageEditHistory getMessageVersion(String messageId, Integer version);
+
+    /**
+     * Get current version of a message
+     */
+    MessageEditHistory getCurrentMessageVersion(String messageId);
+
+    /**
+     * Revert message to a specific version
+     */
+    Message revertMessageToVersion(String messageId, Integer version, Long userId, String reason);
+
+    /**
+     * Get edit history by user
+     */
+    List<MessageEditHistory> getEditHistoryByUser(Long userId);
+
+    /**
+     * Get edit history by user with pagination
+     */
+    Page<MessageEditHistory> getEditHistoryByUser(Long userId, Pageable pageable);
+
+    /**
+     * Get edit history within date range
+     */
+    List<MessageEditHistory> getEditHistoryByDateRange(LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Get edit history within date range with pagination
+     */
+    Page<MessageEditHistory> getEditHistoryByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+
+    /**
+     * Count edit history for a message
+     */
+    long countMessageEditHistory(String messageId);
+
+    /**
+     * Get latest edit for a message
+     */
+    MessageEditHistory getLatestEditForMessage(String messageId);
+
+    // ==================== ENHANCED DELETION METHODS ====================
+
+    /**
+     * Delete message with enhanced options
+     */
+    void deleteMessageWithOptions(DeleteMessageRequest request);
+
+    /**
+     * Bulk delete messages
+     */
+    void bulkDeleteMessages(List<String> messageIds, Long userId, Boolean deleteForEveryone);
+
+    /**
+     * Delete all messages in a chat room
+     */
+    void deleteAllMessagesInRoom(Long chatRoomId, Long userId, Boolean deleteForEveryone);
+
+    /**
+     * Delete messages by date range
+     */
+    void deleteMessagesByDateRange(Long chatRoomId, LocalDateTime startDate, LocalDateTime endDate, Long userId, Boolean deleteForEveryone);
+
+    /**
+     * Delete messages by user
+     */
+    void deleteMessagesByUser(Long chatRoomId, Long targetUserId, Long deletedByUserId, Boolean deleteForEveryone);
+
+    /**
+     * Permanently delete message (hard delete)
+     */
+    void permanentlyDeleteMessage(String messageId, Long userId);
+
+    /**
+     * Restore deleted message
+     */
+    Message restoreDeletedMessage(String messageId, Long userId);
+
+    /**
+     * Get deleted messages for a user
+     */
+    List<Message> getDeletedMessages(Long userId, Long chatRoomId);
+
+    /**
+     * Get deleted messages with pagination
+     */
+    Page<Message> getDeletedMessages(Long userId, Long chatRoomId, Pageable pageable);
+
+    /**
+     * Cleanup old deleted messages
+     */
+    void cleanupOldDeletedMessages(int daysOld);
+
+    // ==================== MESSAGE SCHEDULING METHODS ====================
+
+    /**
+     * Schedule a message for future delivery
+     */
+    ScheduledMessage scheduleMessage(ScheduleMessageRequest request);
+
+    /**
+     * Get scheduled messages for a user
+     */
+    List<ScheduledMessage> getScheduledMessagesByUser(Long userId);
+
+    /**
+     * Get scheduled messages for a user with pagination
+     */
+    Page<ScheduledMessage> getScheduledMessagesByUser(Long userId, Pageable pageable);
+
+    /**
+     * Get scheduled messages for a chat room
+     */
+    List<ScheduledMessage> getScheduledMessagesByRoom(Long chatRoomId);
+
+    /**
+     * Get scheduled messages for a chat room with pagination
+     */
+    Page<ScheduledMessage> getScheduledMessagesByRoom(Long chatRoomId, Pageable pageable);
+
+    /**
+     * Get scheduled messages by status
+     */
+    List<ScheduledMessage> getScheduledMessagesByStatus(ScheduledMessage.ScheduledStatus status);
+
+    /**
+     * Get scheduled messages by status with pagination
+     */
+    Page<ScheduledMessage> getScheduledMessagesByStatus(ScheduledMessage.ScheduledStatus status, Pageable pageable);
+
+    /**
+     * Cancel a scheduled message
+     */
+    void cancelScheduledMessage(String scheduledMessageId, Long userId);
+
+    /**
+     * Update a scheduled message
+     */
+    ScheduledMessage updateScheduledMessage(String scheduledMessageId, ScheduleMessageRequest request);
+
+    /**
+     * Get scheduled message by ID
+     */
+    ScheduledMessage getScheduledMessageById(String scheduledMessageId);
+
+    /**
+     * Process scheduled messages (called by scheduler)
+     */
+    void processScheduledMessages();
+
+    /**
+     * Retry failed scheduled messages
+     */
+    void retryFailedScheduledMessages();
+
+    /**
+     * Cleanup expired scheduled messages
+     */
+    void cleanupExpiredScheduledMessages();
+
+    /**
+     * Count scheduled messages by user
+     */
+    long countScheduledMessagesByUser(Long userId);
+
+    /**
+     * Count scheduled messages by chat room
+     */
+    long countScheduledMessagesByRoom(Long chatRoomId);
+
+    /**
+     * Count scheduled messages by status
+     */
+    long countScheduledMessagesByStatus(ScheduledMessage.ScheduledStatus status);
 }

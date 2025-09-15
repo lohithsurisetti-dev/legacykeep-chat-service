@@ -782,7 +782,148 @@ All documented API endpoints have been tested and verified working. The service 
 
 ---
 
-**Last Updated:** September 14, 2025  
-**Service Version:** 2.1.0 (Production Ready with Content Filtering)  
+## 8. Advanced Message Features
+
+### **Message Search**
+```bash
+# Full-text search across messages
+curl -X POST http://localhost:8083/chat/api/v1/messages/search \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "test message",
+    "userId": 1,
+    "chatRoomId": 1,
+    "page": 0,
+    "size": 10
+  }'
+```
+
+### **Message Threading**
+```bash
+# Get replies to a specific message
+curl -X GET "http://localhost:8083/chat/api/v1/messages/{messageId}/replies?page=0&size=10"
+
+# Get thread summary with reply count and latest reply
+curl -X GET "http://localhost:8083/chat/api/v1/messages/{messageId}/thread/summary"
+
+# Get all messages in a thread
+curl -X GET "http://localhost:8083/chat/api/v1/messages/{messageId}/thread?page=0&size=10"
+
+# Get thread root messages (messages that are not replies)
+curl -X GET "http://localhost:8083/chat/api/v1/messages/threads/room/{chatRoomId}?page=0&size=10"
+```
+
+### **Message Edit History**
+```bash
+# Edit message with history tracking
+curl -X PUT http://localhost:8083/chat/api/v1/messages/edit-with-history \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messageId": "{messageId}",
+    "userId": 1,
+    "newContent": "This is an edited message with history tracking.",
+    "editReason": "Added emphasis",
+    "editType": "CONTENT_UPDATE"
+  }'
+
+# Get edit history for a message
+curl -X GET "http://localhost:8083/chat/api/v1/messages/{messageId}/edit-history?page=0&size=10"
+
+# Get specific version of a message
+curl -X GET "http://localhost:8083/chat/api/v1/messages/{messageId}/version/{version}"
+
+# Revert message to a specific version
+curl -X POST "http://localhost:8083/chat/api/v1/messages/{messageId}/revert/{version}?userId=1"
+```
+
+### **Message Deletion**
+```bash
+# Delete message with options
+curl -X DELETE http://localhost:8083/chat/api/v1/messages/delete-with-options \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messageId": "{messageId}",
+    "userId": 2,
+    "deleteForEveryone": true,
+    "deleteReplies": false,
+    "deleteEditHistory": false,
+    "notifyParticipants": true
+  }'
+
+# Bulk delete messages
+curl -X DELETE http://localhost:8083/chat/api/v1/messages/bulk-delete \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messageIds": ["{messageId1}", "{messageId2}"],
+    "userId": 1,
+    "deleteForEveryone": true,
+    "deleteReplies": false,
+    "deleteEditHistory": false,
+    "notifyParticipants": true
+  }'
+
+# Delete all messages in a room
+curl -X DELETE "http://localhost:8083/chat/api/v1/messages/room/{chatRoomId}/delete-all?userId=1&deleteForEveryone=true"
+
+# Get deleted messages
+curl -X GET "http://localhost:8083/chat/api/v1/messages/deleted/user/{userId}?page=0&size=10"
+
+# Restore deleted message
+curl -X POST "http://localhost:8083/chat/api/v1/messages/{messageId}/restore?userId=1"
+```
+
+### **Message Scheduling**
+```bash
+# Schedule a message for future delivery
+curl -X POST http://localhost:8083/chat/api/v1/messages/schedule \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chatRoomId": 1,
+    "senderUserId": 1,
+    "content": "This is a scheduled message for testing!",
+    "messageType": "TEXT",
+    "scheduledFor": "2025-09-15T01:20:00Z",
+    "maxRetries": 3,
+    "metadata": {
+      "test": true,
+      "feature": "scheduling"
+    }
+  }'
+
+# Get scheduled messages by user
+curl -X GET "http://localhost:8083/chat/api/v1/messages/scheduled/user/{userId}?page=0&size=10"
+
+# Get scheduled messages by room
+curl -X GET "http://localhost:8083/chat/api/v1/messages/scheduled/room/{chatRoomId}?page=0&size=10"
+
+# Get scheduled messages by status
+curl -X GET "http://localhost:8083/chat/api/v1/messages/scheduled/status/PENDING?page=0&size=10"
+
+# Cancel scheduled message
+curl -X DELETE "http://localhost:8083/chat/api/v1/messages/scheduled/{scheduledMessageId}/cancel?userId=1"
+
+# Update scheduled message
+curl -X PUT http://localhost:8083/chat/api/v1/messages/scheduled/{scheduledMessageId} \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "Updated scheduled message content",
+    "scheduledFor": "2025-09-15T02:00:00Z",
+    "metadata": {
+      "updated": true
+    }
+  }'
+```
+
+### **Advanced Features Coverage:**
+- ✅ **Message Search**: Full-text search with MongoDB text indexing
+- ✅ **Message Threading**: Reply-to-message threading with thread summaries
+- ✅ **Message Edit History**: Complete edit tracking with version control
+- ✅ **Message Deletion**: Soft delete, hard delete, bulk delete, and restore
+- ✅ **Message Scheduling**: Future message delivery with retry logic
+
+---
+
+**Last Updated:** September 15, 2025  
+**Service Version:** 2.2.0 (Production Ready with Advanced Message Features)  
 **Tested By:** LegacyKeep Development Team  
 **Status:** ✅ PRODUCTION READY

@@ -6,6 +6,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.TextIndexed;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -51,6 +52,7 @@ public class Message {
     private MessageType messageType;
 
     @Field("content")
+    @TextIndexed(weight = 10)
     private String content;
 
     @Field("status")
@@ -73,6 +75,9 @@ public class Message {
 
     @Field("is_deleted_for_everyone")
     private Boolean isDeletedForEveryone;
+
+    @Field("is_edited")
+    private Boolean isEdited;
 
     @Field("is_starred")
     private Boolean isStarred;

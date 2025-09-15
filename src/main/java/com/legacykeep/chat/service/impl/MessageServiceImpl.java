@@ -4,10 +4,18 @@ import com.legacykeep.chat.dto.request.EditMessageRequest;
 import com.legacykeep.chat.dto.request.ForwardMessageRequest;
 import com.legacykeep.chat.dto.request.ReactionRequest;
 import com.legacykeep.chat.dto.request.SendMessageRequest;
+import com.legacykeep.chat.dto.request.EditMessageWithHistoryRequest;
+import com.legacykeep.chat.dto.request.DeleteMessageRequest;
+import com.legacykeep.chat.dto.request.ScheduleMessageRequest;
 import com.legacykeep.chat.entity.Message;
+import com.legacykeep.chat.entity.MessageEditHistory;
+import com.legacykeep.chat.entity.ScheduledMessage;
+import com.legacykeep.chat.dto.response.ThreadSummary;
 import com.legacykeep.chat.enums.MessageStatus;
 import com.legacykeep.chat.enums.MessageType;
 import com.legacykeep.chat.repository.mongo.MessageRepository;
+import com.legacykeep.chat.repository.mongo.MessageEditHistoryRepository;
+import com.legacykeep.chat.repository.mongo.ScheduledMessageRepository;
 import com.legacykeep.chat.service.ChatRoomService;
 import com.legacykeep.chat.service.ContentFilterService;
 import com.legacykeep.chat.service.EncryptionService;
@@ -17,7 +25,9 @@ import com.legacykeep.chat.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +49,8 @@ import java.util.stream.Collectors;
 public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
+    private final MessageEditHistoryRepository messageEditHistoryRepository;
+    private final ScheduledMessageRepository scheduledMessageRepository;
     private final ChatRoomService chatRoomService;
     private final WebSocketService webSocketService;
     private final EncryptionService encryptionService;
@@ -1082,5 +1094,876 @@ public class MessageServiceImpl implements MessageService {
         // If we reach here, the message passed all filters
         // Use the existing sendMessage method
         return sendMessage(request);
+    }
+
+    // ==================== SEARCH METHODS ====================
+
+    @Override
+    public List<Message> searchMessages(String query, Long userId) {
+        log.debug("Searching messages with query: '{}' for user: {}", query, userId);
+        
+        long startTime = System.currentTimeMillis();
+        List<Message> messages = messageRepository.searchMessages(query);
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages for query '{}' in {}ms", messages.size(), query, searchTime);
+        return messages;
+    }
+
+    @Override
+    public Page<Message> searchMessages(String query, Long userId, Pageable pageable) {
+        log.debug("Searching messages with query: '{}' for user: {} with pagination", query, userId);
+        
+        long startTime = System.currentTimeMillis();
+        Page<Message> messages = messageRepository.searchMessages(query, pageable);
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages for query '{}' in {}ms (page {})", 
+                messages.getTotalElements(), query, searchTime, pageable.getPageNumber());
+        return messages;
+    }
+
+    @Override
+    public List<Message> searchMessagesWithFilters(String query, Long userId, Long chatRoomId, List<Long> chatRoomIds, 
+                                                 Long senderUserId, LocalDateTime startDate, LocalDateTime endDate, 
+                                                 Boolean isStarred, Boolean isEncrypted, Boolean includeDeleted) {
+        log.debug("Searching messages with advanced filters - query: '{}', user: {}, room: {}, sender: {}", 
+                query, userId, chatRoomId, senderUserId);
+        
+        long startTime = System.currentTimeMillis();
+        
+        // Build filter parameters
+        List<Long> roomIds = chatRoomIds != null ? chatRoomIds : 
+                           (chatRoomId != null ? List.of(chatRoomId) : null);
+        
+        List<Message> messages = messageRepository.searchMessagesWithFilters(
+                query, roomIds, senderUserId, isStarred, startDate, endDate);
+        
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages with advanced filters for query '{}' in {}ms", 
+                messages.size(), query, searchTime);
+        return messages;
+    }
+
+    @Override
+    public Page<Message> searchMessagesWithFilters(String query, Long userId, Long chatRoomId, List<Long> chatRoomIds, 
+                                                 Long senderUserId, LocalDateTime startDate, LocalDateTime endDate, 
+                                                 Boolean isStarred, Boolean isEncrypted, Boolean includeDeleted, Pageable pageable) {
+        log.debug("Searching messages with advanced filters and pagination - query: '{}', user: {}, room: {}, sender: {}", 
+                query, userId, chatRoomId, senderUserId);
+        
+        long startTime = System.currentTimeMillis();
+        
+        // Build filter parameters
+        List<Long> roomIds = chatRoomIds != null ? chatRoomIds : 
+                           (chatRoomId != null ? List.of(chatRoomId) : null);
+        
+        Page<Message> messages = messageRepository.searchMessagesWithFilters(
+                query, roomIds, senderUserId, isStarred, startDate, endDate, pageable);
+        
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages with advanced filters for query '{}' in {}ms (page {})", 
+                messages.getTotalElements(), query, searchTime, pageable.getPageNumber());
+        return messages;
+    }
+
+    @Override
+    public List<Message> searchMessagesInRoom(String query, Long userId, Long chatRoomId) {
+        log.debug("Searching messages in room: {} with query: '{}' for user: {}", chatRoomId, query, userId);
+        
+        long startTime = System.currentTimeMillis();
+        List<Message> messages = messageRepository.searchMessagesInRoom(chatRoomId, query);
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages in room {} for query '{}' in {}ms", 
+                messages.size(), chatRoomId, query, searchTime);
+        return messages;
+    }
+
+    @Override
+    public Page<Message> searchMessagesInRoom(String query, Long userId, Long chatRoomId, Pageable pageable) {
+        log.debug("Searching messages in room: {} with query: '{}' for user: {} with pagination", 
+                chatRoomId, query, userId);
+        
+        long startTime = System.currentTimeMillis();
+        Page<Message> messages = messageRepository.searchMessagesInRoom(chatRoomId, query, pageable);
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages in room {} for query '{}' in {}ms (page {})", 
+                messages.getTotalElements(), chatRoomId, query, searchTime, pageable.getPageNumber());
+        return messages;
+    }
+
+    @Override
+    public List<Message> searchMessagesBySender(String query, Long userId, Long senderUserId) {
+        log.debug("Searching messages by sender: {} with query: '{}' for user: {}", senderUserId, query, userId);
+        
+        long startTime = System.currentTimeMillis();
+        List<Message> messages = messageRepository.searchMessagesBySender(senderUserId, query);
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages by sender {} for query '{}' in {}ms", 
+                messages.size(), senderUserId, query, searchTime);
+        return messages;
+    }
+
+    @Override
+    public Page<Message> searchMessagesBySender(String query, Long userId, Long senderUserId, Pageable pageable) {
+        log.debug("Searching messages by sender: {} with query: '{}' for user: {} with pagination", 
+                senderUserId, query, userId);
+        
+        long startTime = System.currentTimeMillis();
+        Page<Message> messages = messageRepository.searchMessagesBySender(senderUserId, query, pageable);
+        long searchTime = System.currentTimeMillis() - startTime;
+        
+        log.info("Found {} messages by sender {} for query '{}' in {}ms (page {})", 
+                messages.getTotalElements(), senderUserId, query, searchTime, pageable.getPageNumber());
+        return messages;
+    }
+
+    @Override
+    public List<String> getSearchSuggestions(String query, Long userId) {
+        log.debug("Getting search suggestions for query: '{}' and user: {}", query, userId);
+        
+        // Simple implementation - in production, you might want to use a more sophisticated approach
+        // like Elasticsearch or a dedicated search service
+        List<String> suggestions = new ArrayList<>();
+        
+        if (query != null && query.length() >= 2) {
+            // Get recent search terms or popular terms
+            // This is a placeholder implementation
+            suggestions.add(query + " family");
+            suggestions.add(query + " meeting");
+            suggestions.add(query + " dinner");
+        }
+        
+        return suggestions;
+    }
+
+    @Override
+    public List<String> getPopularSearchTerms(Long userId) {
+        log.debug("Getting popular search terms for user: {}", userId);
+        
+        // Placeholder implementation - in production, you would track search analytics
+        List<String> popularTerms = new ArrayList<>();
+        popularTerms.add("family dinner");
+        popularTerms.add("meeting");
+        popularTerms.add("birthday");
+        popularTerms.add("vacation");
+        popularTerms.add("work");
+        
+        return popularTerms;
+    }
+
+    // ==================== THREADING METHODS ====================
+
+    @Override
+    public List<Message> getRepliesToMessage(String messageId) {
+        log.debug("Getting replies to message: {}", messageId);
+        return messageRepository.findByReplyToMessageIdOrderByCreatedAtAsc(messageId);
+    }
+
+    @Override
+    public Page<Message> getRepliesToMessage(String messageId, Pageable pageable) {
+        log.debug("Getting replies to message: {} with pagination", messageId);
+        return messageRepository.findByReplyToMessageIdOrderByCreatedAtAsc(messageId, pageable);
+    }
+
+    @Override
+    public List<Message> getThreadMessages(String messageId) {
+        log.debug("Getting all messages in thread: {}", messageId);
+        return messageRepository.findThreadMessages(messageId);
+    }
+
+    @Override
+    public Page<Message> getThreadMessages(String messageId, Pageable pageable) {
+        log.debug("Getting all messages in thread: {} with pagination", messageId);
+        return messageRepository.findThreadMessages(messageId, pageable);
+    }
+
+    @Override
+    public List<Message> getThreadRootMessages(Long chatRoomId) {
+        log.debug("Getting thread root messages in chat room: {}", chatRoomId);
+        return messageRepository.findThreadRootMessages(chatRoomId);
+    }
+
+    @Override
+    public Page<Message> getThreadRootMessages(Long chatRoomId, Pageable pageable) {
+        log.debug("Getting thread root messages in chat room: {} with pagination", chatRoomId);
+        return messageRepository.findThreadRootMessages(chatRoomId, pageable);
+    }
+
+    @Override
+    public long countRepliesToMessage(String messageId) {
+        log.debug("Counting replies to message: {}", messageId);
+        return messageRepository.countByReplyToMessageId(messageId);
+    }
+
+    @Override
+    public Message getLatestReplyInThread(String messageId) {
+        log.debug("Getting latest reply in thread: {}", messageId);
+        return messageRepository.findLatestReplyInThread(messageId, Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    @Override
+    public ThreadSummary getThreadSummary(String messageId) {
+        log.debug("Getting thread summary for message: {}", messageId);
+        
+        // Get the root message
+        Message rootMessage = getMessageById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found: " + messageId));
+        
+        // Count replies
+        long replyCount = countRepliesToMessage(messageId);
+        
+        // Get latest reply
+        Message latestReply = getLatestReplyInThread(messageId);
+        
+        // Get recent replies (last 5)
+        Pageable recentRepliesPageable = PageRequest.of(0, 5, Sort.by(Sort.Direction.DESC, "createdAt"));
+        List<Message> recentReplies = getRepliesToMessage(messageId, recentRepliesPageable).getContent();
+        
+        return ThreadSummary.fromMessage(rootMessage, replyCount, latestReply, recentReplies);
+    }
+
+    // ==================== EDIT HISTORY METHODS ====================
+
+    @Override
+    public Message editMessageWithHistory(EditMessageWithHistoryRequest request) {
+        log.debug("Editing message with history: {} by user: {}", request.getMessageId(), request.getUserId());
+        
+        // Get the existing message
+        Message existingMessage = getMessageById(request.getMessageId())
+                .orElseThrow(() -> new RuntimeException("Message not found: " + request.getMessageId()));
+        
+        // Check if user is authorized to edit
+        if (!existingMessage.getSenderUserId().equals(request.getUserId())) {
+            throw new RuntimeException("User is not authorized to edit this message");
+        }
+        
+        // Get current version number
+        long currentVersionCount = messageEditHistoryRepository.countByMessageId(request.getMessageId());
+        int newVersion = (int) currentVersionCount + 1;
+        
+        // Create edit history record
+        MessageEditHistory editHistory = MessageEditHistory.builder()
+                .messageId(request.getMessageId())
+                .version(newVersion)
+                .previousContent(existingMessage.getContent())
+                .newContent(request.getNewContent())
+                .editedByUserId(request.getUserId())
+                .editReason(request.getEditReason())
+                .editTimestamp(LocalDateTime.now())
+                .isCurrentVersion(true)
+                .editType(request.getEditType() != null ? request.getEditType() : MessageEditHistory.EditType.CONTENT_EDIT)
+                .metadata(request.getMetadata())
+                .build();
+        
+        // Mark previous version as not current
+        messageEditHistoryRepository.findByMessageIdOrderByVersionDesc(request.getMessageId())
+                .stream()
+                .filter(history -> history.getIsCurrentVersion() != null && history.getIsCurrentVersion())
+                .forEach(history -> {
+                    history.setIsCurrentVersion(false);
+                    messageEditHistoryRepository.save(history);
+                });
+        
+        // Save edit history
+        messageEditHistoryRepository.save(editHistory);
+        
+        // Update the message
+        existingMessage.setContent(request.getNewContent());
+        existingMessage.setUpdatedAt(LocalDateTime.now());
+        existingMessage.setIsEdited(true);
+        
+        Message updatedMessage = messageRepository.save(existingMessage);
+        
+        log.info("Message edited successfully: {} version: {}", request.getMessageId(), newVersion);
+        return updatedMessage;
+    }
+
+    @Override
+    public List<MessageEditHistory> getMessageEditHistory(String messageId) {
+        log.debug("Getting edit history for message: {}", messageId);
+        return messageEditHistoryRepository.findByMessageIdOrderByVersionDesc(messageId);
+    }
+
+    @Override
+    public Page<MessageEditHistory> getMessageEditHistory(String messageId, Pageable pageable) {
+        log.debug("Getting edit history for message: {} with pagination", messageId);
+        return messageEditHistoryRepository.findByMessageIdOrderByVersionDesc(messageId, pageable);
+    }
+
+    @Override
+    public MessageEditHistory getMessageVersion(String messageId, Integer version) {
+        log.debug("Getting version {} of message: {}", version, messageId);
+        return messageEditHistoryRepository.findByMessageIdAndVersion(messageId, version)
+                .orElseThrow(() -> new RuntimeException("Version not found: " + version + " for message: " + messageId));
+    }
+
+    @Override
+    public MessageEditHistory getCurrentMessageVersion(String messageId) {
+        log.debug("Getting current version of message: {}", messageId);
+        return messageEditHistoryRepository.findCurrentVersion(messageId)
+                .orElseThrow(() -> new RuntimeException("Current version not found for message: " + messageId));
+    }
+
+    @Override
+    public Message revertMessageToVersion(String messageId, Integer version, Long userId, String reason) {
+        log.debug("Reverting message: {} to version: {} by user: {}", messageId, version, userId);
+        
+        // Get the target version
+        MessageEditHistory targetVersion = getMessageVersion(messageId, version);
+        
+        // Get the current message
+        Message currentMessage = getMessageById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found: " + messageId));
+        
+        // Check authorization
+        if (!currentMessage.getSenderUserId().equals(userId)) {
+            throw new RuntimeException("User is not authorized to revert this message");
+        }
+        
+        // Create new edit history record for the revert
+        long currentVersionCount = messageEditHistoryRepository.countByMessageId(messageId);
+        int newVersion = (int) currentVersionCount + 1;
+        
+        MessageEditHistory revertHistory = MessageEditHistory.builder()
+                .messageId(messageId)
+                .version(newVersion)
+                .previousContent(currentMessage.getContent())
+                .newContent(targetVersion.getNewContent())
+                .editedByUserId(userId)
+                .editReason("Reverted to version " + version + ". " + (reason != null ? reason : ""))
+                .editTimestamp(LocalDateTime.now())
+                .isCurrentVersion(true)
+                .editType(MessageEditHistory.EditType.CORRECTION_EDIT)
+                .metadata("{\"revertedFromVersion\": " + version + "}")
+                .build();
+        
+        // Mark previous version as not current
+        messageEditHistoryRepository.findByMessageIdOrderByVersionDesc(messageId)
+                .stream()
+                .filter(history -> history.getIsCurrentVersion() != null && history.getIsCurrentVersion())
+                .forEach(history -> {
+                    history.setIsCurrentVersion(false);
+                    messageEditHistoryRepository.save(history);
+                });
+        
+        // Save revert history
+        messageEditHistoryRepository.save(revertHistory);
+        
+        // Update the message
+        currentMessage.setContent(targetVersion.getNewContent());
+        currentMessage.setUpdatedAt(LocalDateTime.now());
+        currentMessage.setIsEdited(true);
+        
+        Message revertedMessage = messageRepository.save(currentMessage);
+        
+        log.info("Message reverted successfully: {} to version: {}", messageId, version);
+        return revertedMessage;
+    }
+
+    @Override
+    public List<MessageEditHistory> getEditHistoryByUser(Long userId) {
+        log.debug("Getting edit history by user: {}", userId);
+        return messageEditHistoryRepository.findByEditedByUserIdOrderByEditTimestampDesc(userId);
+    }
+
+    @Override
+    public Page<MessageEditHistory> getEditHistoryByUser(Long userId, Pageable pageable) {
+        log.debug("Getting edit history by user: {} with pagination", userId);
+        return messageEditHistoryRepository.findByEditedByUserIdOrderByEditTimestampDesc(userId, pageable);
+    }
+
+    @Override
+    public List<MessageEditHistory> getEditHistoryByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
+        log.debug("Getting edit history between: {} and {}", startDate, endDate);
+        return messageEditHistoryRepository.findByEditTimestampBetween(startDate, endDate);
+    }
+
+    @Override
+    public Page<MessageEditHistory> getEditHistoryByDateRange(LocalDateTime startDate, LocalDateTime endDate, Pageable pageable) {
+        log.debug("Getting edit history between: {} and {} with pagination", startDate, endDate);
+        return messageEditHistoryRepository.findByEditTimestampBetween(startDate, endDate, pageable);
+    }
+
+    @Override
+    public long countMessageEditHistory(String messageId) {
+        log.debug("Counting edit history for message: {}", messageId);
+        return messageEditHistoryRepository.countByMessageId(messageId);
+    }
+
+    @Override
+    public MessageEditHistory getLatestEditForMessage(String messageId) {
+        log.debug("Getting latest edit for message: {}", messageId);
+        return messageEditHistoryRepository.findLatestEditForMessage(messageId);
+    }
+
+    // ==================== ENHANCED DELETION METHODS ====================
+
+    @Override
+    public void deleteMessageWithOptions(DeleteMessageRequest request) {
+        log.debug("Deleting message with options: {} by user: {}", request.getMessageId(), request.getUserId());
+        
+        Message message = getMessageById(request.getMessageId())
+                .orElseThrow(() -> new RuntimeException("Message not found: " + request.getMessageId()));
+        
+        // Check authorization
+        if (!message.getSenderUserId().equals(request.getUserId())) {
+            throw new RuntimeException("User is not authorized to delete this message");
+        }
+        
+        boolean deleteForEveryone = request.getDeleteForEveryone() != null ? request.getDeleteForEveryone() : false;
+        
+        // Delete replies if requested
+        if (request.getDeleteReplies() != null && request.getDeleteReplies()) {
+            List<Message> replies = getRepliesToMessage(request.getMessageId());
+            for (Message reply : replies) {
+                reply.setDeletedAt(LocalDateTime.now());
+                reply.setDeletedByUserId(request.getUserId());
+                reply.setIsDeletedForEveryone(deleteForEveryone);
+                messageRepository.save(reply);
+            }
+        }
+        
+        // Delete edit history if requested
+        if (request.getDeleteEditHistory() != null && request.getDeleteEditHistory()) {
+            List<MessageEditHistory> editHistory = getMessageEditHistory(request.getMessageId());
+            messageEditHistoryRepository.deleteAll(editHistory);
+        }
+        
+        // Delete the main message
+        message.setDeletedAt(LocalDateTime.now());
+        message.setDeletedByUserId(request.getUserId());
+        message.setIsDeletedForEveryone(deleteForEveryone);
+        messageRepository.save(message);
+        
+        // Notify participants if requested
+        if (request.getNotifyParticipants() == null || request.getNotifyParticipants()) {
+            webSocketService.sendMessageDeleteNotification(request.getMessageId(), request.getUserId(), deleteForEveryone);
+        }
+        
+        log.info("Message deleted with options: {} by user: {}", request.getMessageId(), request.getUserId());
+    }
+
+    @Override
+    public void bulkDeleteMessages(List<String> messageIds, Long userId, Boolean deleteForEveryone) {
+        log.debug("Bulk deleting {} messages by user: {}", messageIds.size(), userId);
+        
+        List<Message> messages = messageRepository.findByIds(messageIds);
+        
+        for (Message message : messages) {
+            // Check authorization for each message
+            if (!message.getSenderUserId().equals(userId)) {
+                log.warn("User {} not authorized to delete message {}", userId, message.getId());
+                continue;
+            }
+            
+            message.setDeletedAt(LocalDateTime.now());
+            message.setDeletedByUserId(userId);
+            message.setIsDeletedForEveryone(deleteForEveryone != null ? deleteForEveryone : false);
+            messageRepository.save(message);
+            
+            // Notify participants
+            webSocketService.sendMessageDeleteNotification(message.getId(), userId, deleteForEveryone != null ? deleteForEveryone : false);
+        }
+        
+        log.info("Bulk deleted {} messages by user: {}", messages.size(), userId);
+    }
+
+    @Override
+    public void deleteAllMessagesInRoom(Long chatRoomId, Long userId, Boolean deleteForEveryone) {
+        log.debug("Deleting all messages in room: {} by user: {}", chatRoomId, userId);
+        
+        List<Message> messages = messageRepository.findAllMessagesInRoom(chatRoomId);
+        
+        for (Message message : messages) {
+            // Check authorization for each message
+            if (!message.getSenderUserId().equals(userId)) {
+                log.warn("User {} not authorized to delete message {}", userId, message.getId());
+                continue;
+            }
+            
+            message.setDeletedAt(LocalDateTime.now());
+            message.setDeletedByUserId(userId);
+            message.setIsDeletedForEveryone(deleteForEveryone != null ? deleteForEveryone : false);
+            messageRepository.save(message);
+        }
+        
+        log.info("Deleted all messages in room: {} by user: {}", chatRoomId, userId);
+    }
+
+    @Override
+    public void deleteMessagesByDateRange(Long chatRoomId, LocalDateTime startDate, LocalDateTime endDate, Long userId, Boolean deleteForEveryone) {
+        log.debug("Deleting messages in room: {} between {} and {} by user: {}", chatRoomId, startDate, endDate, userId);
+        
+        List<Message> messages = messageRepository.findMessagesByDateRange(chatRoomId, startDate, endDate);
+        
+        for (Message message : messages) {
+            // Check authorization for each message
+            if (!message.getSenderUserId().equals(userId)) {
+                log.warn("User {} not authorized to delete message {}", userId, message.getId());
+                continue;
+            }
+            
+            message.setDeletedAt(LocalDateTime.now());
+            message.setDeletedByUserId(userId);
+            message.setIsDeletedForEveryone(deleteForEveryone != null ? deleteForEveryone : false);
+            messageRepository.save(message);
+        }
+        
+        log.info("Deleted {} messages by date range by user: {}", messages.size(), userId);
+    }
+
+    @Override
+    public void deleteMessagesByUser(Long chatRoomId, Long targetUserId, Long deletedByUserId, Boolean deleteForEveryone) {
+        log.debug("Deleting messages by user: {} in room: {} by user: {}", targetUserId, chatRoomId, deletedByUserId);
+        
+        List<Message> messages = messageRepository.findMessagesByUserInRoom(chatRoomId, targetUserId);
+        
+        for (Message message : messages) {
+            // Check authorization - only the sender or admin can delete
+            if (!message.getSenderUserId().equals(deletedByUserId)) {
+                // TODO: Add admin check here
+                log.warn("User {} not authorized to delete message {}", deletedByUserId, message.getId());
+                continue;
+            }
+            
+            message.setDeletedAt(LocalDateTime.now());
+            message.setDeletedByUserId(deletedByUserId);
+            message.setIsDeletedForEveryone(deleteForEveryone != null ? deleteForEveryone : false);
+            messageRepository.save(message);
+        }
+        
+        log.info("Deleted {} messages by user: {} by user: {}", messages.size(), targetUserId, deletedByUserId);
+    }
+
+    @Override
+    public void permanentlyDeleteMessage(String messageId, Long userId) {
+        log.debug("Permanently deleting message: {} by user: {}", messageId, userId);
+        
+        Message message = getMessageById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found: " + messageId));
+        
+        // Check authorization
+        if (!message.getSenderUserId().equals(userId)) {
+            throw new RuntimeException("User is not authorized to permanently delete this message");
+        }
+        
+        // Delete edit history
+        List<MessageEditHistory> editHistory = getMessageEditHistory(messageId);
+        messageEditHistoryRepository.deleteAll(editHistory);
+        
+        // Delete replies
+        List<Message> replies = getRepliesToMessage(messageId);
+        messageRepository.deleteAll(replies);
+        
+        // Delete the main message
+        messageRepository.delete(message);
+        
+        log.info("Permanently deleted message: {} by user: {}", messageId, userId);
+    }
+
+    @Override
+    public Message restoreDeletedMessage(String messageId, Long userId) {
+        log.debug("Restoring deleted message: {} by user: {}", messageId, userId);
+        
+        Message message = getMessageById(messageId)
+                .orElseThrow(() -> new RuntimeException("Message not found: " + messageId));
+        
+        // Check authorization
+        if (!message.getSenderUserId().equals(userId)) {
+            throw new RuntimeException("User is not authorized to restore this message");
+        }
+        
+        // Check if message is actually deleted
+        if (message.getDeletedAt() == null) {
+            throw new RuntimeException("Message is not deleted");
+        }
+        
+        // Restore the message
+        message.setDeletedAt(null);
+        message.setDeletedByUserId(null);
+        message.setIsDeletedForEveryone(false);
+        
+        Message restoredMessage = messageRepository.save(message);
+        
+        log.info("Restored deleted message: {} by user: {}", messageId, userId);
+        return restoredMessage;
+    }
+
+    @Override
+    public List<Message> getDeletedMessages(Long userId, Long chatRoomId) {
+        log.debug("Getting deleted messages for user: {} in room: {}", userId, chatRoomId);
+        return messageRepository.findDeletedMessagesByUser(chatRoomId, userId);
+    }
+
+    @Override
+    public Page<Message> getDeletedMessages(Long userId, Long chatRoomId, Pageable pageable) {
+        log.debug("Getting deleted messages for user: {} in room: {} with pagination", userId, chatRoomId);
+        return messageRepository.findDeletedMessagesByUser(chatRoomId, userId, pageable);
+    }
+
+    @Override
+    public void cleanupOldDeletedMessages(int daysOld) {
+        log.debug("Cleaning up deleted messages older than {} days", daysOld);
+        
+        LocalDateTime cutoffDate = LocalDateTime.now().minusDays(daysOld);
+        List<Message> oldDeletedMessages = messageRepository.findOldDeletedMessages(cutoffDate);
+        
+        for (Message message : oldDeletedMessages) {
+            // Delete edit history
+            List<MessageEditHistory> editHistory = getMessageEditHistory(message.getId());
+            messageEditHistoryRepository.deleteAll(editHistory);
+            
+            // Delete replies
+            List<Message> replies = getRepliesToMessage(message.getId());
+            messageRepository.deleteAll(replies);
+            
+            // Delete the main message
+            messageRepository.delete(message);
+        }
+        
+        log.info("Cleaned up {} old deleted messages", oldDeletedMessages.size());
+    }
+
+    // ==================== MESSAGE SCHEDULING METHODS ====================
+
+    @Override
+    public ScheduledMessage scheduleMessage(ScheduleMessageRequest request) {
+        log.debug("Scheduling message for user: {} in room: {} at: {}", 
+                request.getSenderUserId(), request.getChatRoomId(), request.getScheduledFor());
+        
+        // Generate UUID for the scheduled message
+        String messageUuid = UUID.randomUUID().toString();
+        
+        // Create scheduled message
+        ScheduledMessage scheduledMessage = ScheduledMessage.builder()
+                .messageUuid(messageUuid)
+                .chatRoomId(request.getChatRoomId())
+                .senderUserId(request.getSenderUserId())
+                .content(request.getContent())
+                .messageType(request.getMessageType())
+                .scheduledFor(request.getScheduledFor())
+                .createdAt(LocalDateTime.now())
+                .status(ScheduledMessage.ScheduledStatus.PENDING)
+                .retryCount(0)
+                .maxRetries(request.getMaxRetries() != null ? request.getMaxRetries() : 3)
+                .metadata(request.getMetadata())
+                .recurrencePattern(request.getRecurrencePattern())
+                .isRecurring(request.getIsRecurring() != null ? request.getIsRecurring() : false)
+                .nextExecution(request.getScheduledFor())
+                .endDate(request.getEndDate())
+                .build();
+        
+        ScheduledMessage savedScheduledMessage = scheduledMessageRepository.save(scheduledMessage);
+        
+        log.info("Message scheduled successfully: {} for user: {} at: {}", 
+                savedScheduledMessage.getId(), request.getSenderUserId(), request.getScheduledFor());
+        
+        return savedScheduledMessage;
+    }
+
+    @Override
+    public List<ScheduledMessage> getScheduledMessagesByUser(Long userId) {
+        log.debug("Getting scheduled messages for user: {}", userId);
+        return scheduledMessageRepository.findBySenderUserIdOrderByScheduledForDesc(userId);
+    }
+
+    @Override
+    public Page<ScheduledMessage> getScheduledMessagesByUser(Long userId, Pageable pageable) {
+        log.debug("Getting scheduled messages for user: {} with pagination", userId);
+        return scheduledMessageRepository.findBySenderUserIdOrderByScheduledForDesc(userId, pageable);
+    }
+
+    @Override
+    public List<ScheduledMessage> getScheduledMessagesByRoom(Long chatRoomId) {
+        log.debug("Getting scheduled messages for room: {}", chatRoomId);
+        return scheduledMessageRepository.findByChatRoomIdOrderByScheduledForDesc(chatRoomId);
+    }
+
+    @Override
+    public Page<ScheduledMessage> getScheduledMessagesByRoom(Long chatRoomId, Pageable pageable) {
+        log.debug("Getting scheduled messages for room: {} with pagination", chatRoomId);
+        return scheduledMessageRepository.findByChatRoomIdOrderByScheduledForDesc(chatRoomId, pageable);
+    }
+
+    @Override
+    public List<ScheduledMessage> getScheduledMessagesByStatus(ScheduledMessage.ScheduledStatus status) {
+        log.debug("Getting scheduled messages with status: {}", status);
+        return scheduledMessageRepository.findByStatusOrderByScheduledForAsc(status);
+    }
+
+    @Override
+    public Page<ScheduledMessage> getScheduledMessagesByStatus(ScheduledMessage.ScheduledStatus status, Pageable pageable) {
+        log.debug("Getting scheduled messages with status: {} with pagination", status);
+        return scheduledMessageRepository.findByStatusOrderByScheduledForAsc(status, pageable);
+    }
+
+    @Override
+    public void cancelScheduledMessage(String scheduledMessageId, Long userId) {
+        log.debug("Cancelling scheduled message: {} by user: {}", scheduledMessageId, userId);
+        
+        ScheduledMessage scheduledMessage = scheduledMessageRepository.findById(scheduledMessageId)
+                .orElseThrow(() -> new RuntimeException("Scheduled message not found: " + scheduledMessageId));
+        
+        // Check authorization
+        if (!scheduledMessage.getSenderUserId().equals(userId)) {
+            throw new RuntimeException("User is not authorized to cancel this scheduled message");
+        }
+        
+        // Check if message can be cancelled
+        if (scheduledMessage.getStatus() != ScheduledMessage.ScheduledStatus.PENDING) {
+            throw new RuntimeException("Only pending scheduled messages can be cancelled");
+        }
+        
+        scheduledMessage.setStatus(ScheduledMessage.ScheduledStatus.CANCELLED);
+        scheduledMessageRepository.save(scheduledMessage);
+        
+        log.info("Scheduled message cancelled: {} by user: {}", scheduledMessageId, userId);
+    }
+
+    @Override
+    public ScheduledMessage updateScheduledMessage(String scheduledMessageId, ScheduleMessageRequest request) {
+        log.debug("Updating scheduled message: {} by user: {}", scheduledMessageId, request.getSenderUserId());
+        
+        ScheduledMessage scheduledMessage = scheduledMessageRepository.findById(scheduledMessageId)
+                .orElseThrow(() -> new RuntimeException("Scheduled message not found: " + scheduledMessageId));
+        
+        // Check authorization
+        if (!scheduledMessage.getSenderUserId().equals(request.getSenderUserId())) {
+            throw new RuntimeException("User is not authorized to update this scheduled message");
+        }
+        
+        // Check if message can be updated
+        if (scheduledMessage.getStatus() != ScheduledMessage.ScheduledStatus.PENDING) {
+            throw new RuntimeException("Only pending scheduled messages can be updated");
+        }
+        
+        // Update fields
+        scheduledMessage.setContent(request.getContent());
+        scheduledMessage.setMessageType(request.getMessageType());
+        scheduledMessage.setScheduledFor(request.getScheduledFor());
+        scheduledMessage.setMetadata(request.getMetadata());
+        scheduledMessage.setRecurrencePattern(request.getRecurrencePattern());
+        scheduledMessage.setIsRecurring(request.getIsRecurring() != null ? request.getIsRecurring() : false);
+        scheduledMessage.setNextExecution(request.getScheduledFor());
+        scheduledMessage.setEndDate(request.getEndDate());
+        scheduledMessage.setMaxRetries(request.getMaxRetries() != null ? request.getMaxRetries() : 3);
+        
+        ScheduledMessage updatedScheduledMessage = scheduledMessageRepository.save(scheduledMessage);
+        
+        log.info("Scheduled message updated: {} by user: {}", scheduledMessageId, request.getSenderUserId());
+        return updatedScheduledMessage;
+    }
+
+    @Override
+    public ScheduledMessage getScheduledMessageById(String scheduledMessageId) {
+        log.debug("Getting scheduled message by ID: {}", scheduledMessageId);
+        return scheduledMessageRepository.findById(scheduledMessageId)
+                .orElseThrow(() -> new RuntimeException("Scheduled message not found: " + scheduledMessageId));
+    }
+
+    @Override
+    public void processScheduledMessages() {
+        log.debug("Processing scheduled messages");
+        
+        LocalDateTime now = LocalDateTime.now();
+        List<ScheduledMessage> readyMessages = scheduledMessageRepository.findMessagesReadyForExecution(now);
+        
+        for (ScheduledMessage scheduledMessage : readyMessages) {
+            try {
+                // Mark as processing
+                scheduledMessage.setStatus(ScheduledMessage.ScheduledStatus.PROCESSING);
+                scheduledMessage.setLastAttempt(now);
+                scheduledMessageRepository.save(scheduledMessage);
+                
+                // Create and send the message
+                SendMessageRequest sendRequest = SendMessageRequest.builder()
+                        .chatRoomId(scheduledMessage.getChatRoomId())
+                        .senderUserId(scheduledMessage.getSenderUserId())
+                        .content(scheduledMessage.getContent())
+                        .messageType(scheduledMessage.getMessageType())
+                        .build();
+                
+                Message sentMessage = sendMessage(sendRequest);
+                
+                // Mark as sent
+                scheduledMessage.setStatus(ScheduledMessage.ScheduledStatus.SENT);
+                scheduledMessageRepository.save(scheduledMessage);
+                
+                log.info("Scheduled message sent successfully: {}", scheduledMessage.getId());
+                
+            } catch (Exception e) {
+                log.error("Failed to process scheduled message: {}", scheduledMessage.getId(), e);
+                
+                // Handle retry logic
+                scheduledMessage.setRetryCount(scheduledMessage.getRetryCount() + 1);
+                scheduledMessage.setErrorMessage(e.getMessage());
+                
+                if (scheduledMessage.getRetryCount() >= scheduledMessage.getMaxRetries()) {
+                    scheduledMessage.setStatus(ScheduledMessage.ScheduledStatus.FAILED);
+                } else {
+                    scheduledMessage.setStatus(ScheduledMessage.ScheduledStatus.PENDING);
+                    // Schedule retry (e.g., in 5 minutes)
+                    scheduledMessage.setScheduledFor(now.plusMinutes(5));
+                }
+                
+                scheduledMessageRepository.save(scheduledMessage);
+            }
+        }
+        
+        log.info("Processed {} scheduled messages", readyMessages.size());
+    }
+
+    @Override
+    public void retryFailedScheduledMessages() {
+        log.debug("Retrying failed scheduled messages");
+        
+        List<ScheduledMessage> failedMessages = scheduledMessageRepository.findFailedMessagesForRetry();
+        
+        for (ScheduledMessage scheduledMessage : failedMessages) {
+            scheduledMessage.setStatus(ScheduledMessage.ScheduledStatus.PENDING);
+            scheduledMessage.setScheduledFor(LocalDateTime.now().plusMinutes(5)); // Retry in 5 minutes
+            scheduledMessageRepository.save(scheduledMessage);
+        }
+        
+        log.info("Retried {} failed scheduled messages", failedMessages.size());
+    }
+
+    @Override
+    public void cleanupExpiredScheduledMessages() {
+        log.debug("Cleaning up expired scheduled messages");
+        
+        LocalDateTime now = LocalDateTime.now();
+        List<ScheduledMessage> expiredMessages = scheduledMessageRepository.findExpiredMessages(now);
+        
+        for (ScheduledMessage scheduledMessage : expiredMessages) {
+            scheduledMessage.setStatus(ScheduledMessage.ScheduledStatus.EXPIRED);
+            scheduledMessageRepository.save(scheduledMessage);
+        }
+        
+        log.info("Cleaned up {} expired scheduled messages", expiredMessages.size());
+    }
+
+    @Override
+    public long countScheduledMessagesByUser(Long userId) {
+        log.debug("Counting scheduled messages for user: {}", userId);
+        return scheduledMessageRepository.countBySenderUserId(userId);
+    }
+
+    @Override
+    public long countScheduledMessagesByRoom(Long chatRoomId) {
+        log.debug("Counting scheduled messages for room: {}", chatRoomId);
+        return scheduledMessageRepository.countByChatRoomId(chatRoomId);
+    }
+
+    @Override
+    public long countScheduledMessagesByStatus(ScheduledMessage.ScheduledStatus status) {
+        log.debug("Counting scheduled messages with status: {}", status);
+        return scheduledMessageRepository.countByStatus(status);
     }
 }

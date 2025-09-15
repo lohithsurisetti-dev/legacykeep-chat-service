@@ -57,6 +57,17 @@ A comprehensive, production-ready chat service for the LegacyKeep family communi
 - **System notifications** and error handling
 - **WebSocket statistics** and monitoring
 
+### Advanced Message Features
+- **Message Search** - Full-text search across all messages with MongoDB text indexing
+- **Message Threading** - Reply-to-message threading with thread summaries and reply counts
+- **Message Edit History** - Complete edit tracking with version control and revert capabilities
+- **Message Deletion** - Soft delete, hard delete, bulk delete, and restore functionality
+- **Message Scheduling** - Future message delivery with retry logic and recurrence patterns
+- **Thread Management** - Get thread summaries, root messages, and reply hierarchies
+- **Edit Tracking** - Track all message edits with timestamps, reasons, and user attribution
+- **Bulk Operations** - Delete multiple messages, restore deleted messages, and cleanup operations
+- **Scheduled Delivery** - Schedule messages for future delivery with metadata and retry logic
+
 ### Analytics & Insights
 - **Real-time analytics** dashboard
 - **User communication patterns**

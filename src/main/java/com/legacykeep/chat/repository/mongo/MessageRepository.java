@@ -5,6 +5,7 @@ import com.legacykeep.chat.enums.MessageStatus;
 import com.legacykeep.chat.enums.MessageType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -413,4 +414,193 @@ public interface MessageRepository extends MongoRepository<Message, String> {
      */
     @Query("{ 'chatRoomId': ?0, 'createdAt': { $gt: ?1 } }")
     Page<Message> findMessagesAfter(Long chatRoomId, LocalDateTime after, Pageable pageable);
+
+    // ==================== SEARCH METHODS ====================
+
+    /**
+     * Full-text search across all messages
+     */
+    @Query("{ $text: { $search: ?0 } }")
+    List<Message> searchMessages(String searchQuery);
+
+    /**
+     * Full-text search across all messages with pagination
+     */
+    @Query("{ $text: { $search: ?0 } }")
+    Page<Message> searchMessages(String searchQuery, Pageable pageable);
+
+    /**
+     * Full-text search in specific chat room
+     */
+    @Query("{ 'chatRoomId': ?0, $text: { $search: ?1 } }")
+    List<Message> searchMessagesInRoom(Long chatRoomId, String searchQuery);
+
+    /**
+     * Full-text search in specific chat room with pagination
+     */
+    @Query("{ 'chatRoomId': ?0, $text: { $search: ?1 } }")
+    Page<Message> searchMessagesInRoom(Long chatRoomId, String searchQuery, Pageable pageable);
+
+    /**
+     * Full-text search by specific sender
+     */
+    @Query("{ 'senderUserId': ?0, $text: { $search: ?1 } }")
+    List<Message> searchMessagesBySender(Long senderUserId, String searchQuery);
+
+    /**
+     * Full-text search by specific sender with pagination
+     */
+    @Query("{ 'senderUserId': ?0, $text: { $search: ?1 } }")
+    Page<Message> searchMessagesBySender(Long senderUserId, String searchQuery, Pageable pageable);
+
+    /**
+     * Full-text search with date range
+     */
+    @Query("{ $text: { $search: ?0 }, 'createdAt': { $gte: ?1, $lte: ?2 } }")
+    List<Message> searchMessagesWithDateRange(String searchQuery, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Full-text search with date range and pagination
+     */
+    @Query("{ $text: { $search: ?0 }, 'createdAt': { $gte: ?1, $lte: ?2 } }")
+    Page<Message> searchMessagesWithDateRange(String searchQuery, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+
+    /**
+     * Full-text search with multiple filters
+     */
+    @Query("{ $text: { $search: ?0 }, 'chatRoomId': { $in: ?1 }, 'senderUserId': ?2, 'isStarred': ?3, 'createdAt': { $gte: ?4, $lte: ?5 } }")
+    List<Message> searchMessagesWithFilters(String searchQuery, List<Long> chatRoomIds, Long senderUserId, Boolean isStarred, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Full-text search with multiple filters and pagination
+     */
+    @Query("{ $text: { $search: ?0 }, 'chatRoomId': { $in: ?1 }, 'senderUserId': ?2, 'isStarred': ?3, 'createdAt': { $gte: ?4, $lte: ?5 } }")
+    Page<Message> searchMessagesWithFilters(String searchQuery, List<Long> chatRoomIds, Long senderUserId, Boolean isStarred, LocalDateTime startDate, LocalDateTime endDate, Pageable pageable);
+
+    /**
+     * Count search results
+     */
+    @Query(value = "{ $text: { $search: ?0 } }", count = true)
+    long countSearchResults(String searchQuery);
+
+    /**
+     * Count search results in specific chat room
+     */
+    @Query(value = "{ 'chatRoomId': ?0, $text: { $search: ?1 } }", count = true)
+    long countSearchResultsInRoom(Long chatRoomId, String searchQuery);
+
+    // ==================== THREADING METHODS ====================
+
+    /**
+     * Find messages that are replies to a specific message
+     */
+    List<Message> findByReplyToMessageIdOrderByCreatedAtAsc(String replyToMessageId);
+
+    /**
+     * Find messages that are replies to a specific message with pagination
+     */
+    Page<Message> findByReplyToMessageIdOrderByCreatedAtAsc(String replyToMessageId, Pageable pageable);
+
+    /**
+     * Find all messages in a thread (original message + all replies)
+     */
+    @Query("{ $or: [{ '_id': ?0 }, { 'replyToMessageId': ?0 }] }")
+    List<Message> findThreadMessages(String messageId);
+
+    /**
+     * Find all messages in a thread with pagination
+     */
+    @Query("{ $or: [{ '_id': ?0 }, { 'replyToMessageId': ?0 }] }")
+    Page<Message> findThreadMessages(String messageId, Pageable pageable);
+
+    /**
+     * Find thread root messages (messages that are not replies)
+     */
+    @Query("{ 'chatRoomId': ?0, 'replyToMessageId': { $exists: false } }")
+    List<Message> findThreadRootMessages(Long chatRoomId);
+
+    /**
+     * Find thread root messages with pagination
+     */
+    @Query("{ 'chatRoomId': ?0, 'replyToMessageId': { $exists: false } }")
+    Page<Message> findThreadRootMessages(Long chatRoomId, Pageable pageable);
+
+    /**
+     * Count replies to a specific message
+     */
+    long countByReplyToMessageId(String replyToMessageId);
+
+    /**
+     * Find messages with replies (thread starters)
+     */
+    @Query("{ 'chatRoomId': ?0, '_id': { $in: { $map: { input: { $group: { _id: '$replyToMessageId' } }, as: 'reply', in: '$$reply._id' } } } }")
+    List<Message> findMessagesWithReplies(Long chatRoomId);
+
+    /**
+     * Find latest reply in a thread
+     */
+    @Query("{ 'replyToMessageId': ?0 }")
+    Message findLatestReplyInThread(String replyToMessageId, Sort sort);
+
+    // ==================== ENHANCED DELETION METHODS ====================
+
+    /**
+     * Find deleted messages for a user
+     */
+    @Query("{ 'chatRoomId': ?0, 'deletedAt': { $exists: true }, 'deletedByUserId': ?1 }")
+    List<Message> findDeletedMessagesByUser(Long chatRoomId, Long userId);
+
+    /**
+     * Find deleted messages for a user with pagination
+     */
+    @Query("{ 'chatRoomId': ?0, 'deletedAt': { $exists: true }, 'deletedByUserId': ?1 }")
+    Page<Message> findDeletedMessagesByUser(Long chatRoomId, Long userId, Pageable pageable);
+
+    /**
+     * Find messages by date range
+     */
+    @Query("{ 'chatRoomId': ?0, 'createdAt': { $gte: ?1, $lte: ?2 } }")
+    List<Message> findMessagesByDateRange(Long chatRoomId, LocalDateTime startDate, LocalDateTime endDate);
+
+    /**
+     * Find messages by user in chat room
+     */
+    @Query("{ 'chatRoomId': ?0, 'senderUserId': ?1 }")
+    List<Message> findMessagesByUserInRoom(Long chatRoomId, Long userId);
+
+    /**
+     * Find all messages in chat room
+     */
+    @Query("{ 'chatRoomId': ?0 }")
+    List<Message> findAllMessagesInRoom(Long chatRoomId);
+
+    /**
+     * Find messages by IDs
+     */
+    @Query("{ '_id': { $in: ?0 } }")
+    List<Message> findByIds(List<String> messageIds);
+
+    /**
+     * Find old deleted messages
+     */
+    @Query("{ 'deletedAt': { $exists: true, $lt: ?0 } }")
+    List<Message> findOldDeletedMessages(LocalDateTime cutoffDate);
+
+    /**
+     * Count deleted messages for a user
+     */
+    @Query(value = "{ 'chatRoomId': ?0, 'deletedAt': { $exists: true }, 'deletedByUserId': ?1 }", count = true)
+    long countDeletedMessagesByUser(Long chatRoomId, Long userId);
+
+    /**
+     * Find messages that are not deleted
+     */
+    @Query("{ 'chatRoomId': ?0, 'deletedAt': { $exists: false } }")
+    List<Message> findNonDeletedMessages(Long chatRoomId);
+
+    /**
+     * Find messages that are not deleted with pagination
+     */
+    @Query("{ 'chatRoomId': ?0, 'deletedAt': { $exists: false } }")
+    Page<Message> findNonDeletedMessages(Long chatRoomId, Pageable pageable);
 }
